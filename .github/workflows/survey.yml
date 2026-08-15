@@ -4,26 +4,49 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Discover models only; spend no inference"
+        description: "Preflight fixture + census only; spend no inference"
         required: true
         type: boolean
         default: true
       max_models:
-        description: "Maximum number of image-capable models"
+        description: "Maximum number of concrete free multimodal models"
         required: true
-        type: string
-        default: "20"
-      allow_paid:
-        description: "Include paid models (still cheapest-first)"
-        required: true
-        type: boolean
-        default: false
+        type: choice
+        options:
+          - "4"
+          - "8"
+          - "12"
+          - "20"
+        default: "12"
 
 permissions:
   contents: read
 
 jobs:
-  survey:
+  census:
+    if: ${{ inputs.dry_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Preflight fixture and census
+        env:
+          MAX_MODELS: ${{ inputs.max_models }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 wheel.py --dry-run --max-models "$MAX_MODELS"
+
+  poll:
+    if: ${{ !inputs.dry_run && github.actor == github.repository_owner }}
+    environment: inference
+    concurrency:
+      group: wheel-inference
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -32,26 +55,17 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run variance machine
+      - name: Run bounded free-model poll
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          DRY_RUN: ${{ inputs.dry_run }}
-          ALLOW_PAID: ${{ inputs.allow_paid }}
+          OPENROUTER_API_KEY: ${{ secrets.WHEEL_OPENROUTER_API_KEY }}
           MAX_MODELS: ${{ inputs.max_models }}
         shell: bash
         run: |
           set -euo pipefail
-          args=(--max-models "$MAX_MODELS")
-          if [[ "$DRY_RUN" == "true" ]]; then
-            args+=(--dry-run)
-          fi
-          if [[ "$ALLOW_PAID" == "true" ]]; then
-            args+=(--allow-paid)
-          fi
-          python3 wheel.py "${args[@]}"
+          test -n "$OPENROUTER_API_KEY"
+          python3 wheel.py --max-models "$MAX_MODELS" --max-tokens 160 --out results/poll.jsonl
 
       - name: Upload raw opinions
-        if: ${{ !inputs.dry_run }}
         uses: actions/upload-artifact@v4
         with:
           name: wheel-opinions
