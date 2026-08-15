@@ -21,7 +21,7 @@ from typing import Any
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 APP_TITLE = "letGPTsustakethewheel"
-DEFAULT_IMAGE = Path("assets/letGPTsustakethewheel.png")
+DEFAULT_IMAGE = Path("assets/letGPTsustakethewheel.jpg")
 DEFAULT_OUT = Path("results/poll.jsonl")
 
 ACTIONS = (
@@ -124,7 +124,7 @@ def select_models(models: list[dict[str, Any]], max_models: int, free_only: bool
 
 
 def image_data_url(path: Path) -> str:
-    mime = mimetypes.guess_type(path.name)[0] or "image/png"
+    mime = mimetypes.guess_type(path.name)[0] or "image/jpeg"
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{encoded}"
 

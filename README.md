@@ -1,6 +1,6 @@
 # letGPTsustakethewheel
 
-![The screenshot being polled](assets/letGPTsustakethewheel.png)
+![The screenshot being polled](assets/letGPTsustakethewheel.jpg)
 
 A tiny cross-model opinion poll.
 
