@@ -1,0 +1,53 @@
+name: Poll image models
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_models:
+        description: Maximum number of models / API calls
+        required: true
+        default: "12"
+      free_only:
+        description: Use only zero-priced or :free models
+        required: true
+        type: boolean
+        default: true
+      max_tokens:
+        description: Maximum output tokens per model
+        required: true
+        default: "160"
+
+permissions:
+  contents: read
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run bounded cross-model poll
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          MAX_MODELS: ${{ inputs.max_models }}
+          MAX_TOKENS: ${{ inputs.max_tokens }}
+          FREE_ONLY: ${{ inputs.free_only }}
+        run: |
+          set -euo pipefail
+          args=(--max-models "$MAX_MODELS" --max-tokens "$MAX_TOKENS" --out results/poll.jsonl)
+          if [ "$FREE_ONLY" = "true" ]; then
+            args+=(--free-only)
+          fi
+          python wheel.py "${args[@]}"
+
+      - name: Upload poll evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: letGPTsustakethewheel-poll
+          path: |
+            results/poll.jsonl
+            results/poll.summary.json
+          retention-days: 3
