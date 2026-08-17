@@ -7,7 +7,7 @@ on:
         description: "Discover/rank image models and show planned spend; generate nothing"
         required: true
         type: boolean
-        default: true
+        default: false
       max_artists:
         description: "Number of distinct raster model-artists"
         required: true
@@ -17,7 +17,7 @@ on:
           - "6"
           - "8"
           - "12"
-        default: "6"
+        default: "12"
       max_spend_usd:
         description: "Hard whole-run planning ceiling in USD"
         required: true
@@ -27,7 +27,7 @@ on:
           - "0.50"
           - "1.00"
           - "2.00"
-        default: "1.00"
+        default: "2.00"
       max_per_image_usd:
         description: "Reject models above this predictable one-image cost"
         required: true
@@ -78,7 +78,7 @@ jobs:
       group: wheel-inference
       cancel-in-progress: false
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
