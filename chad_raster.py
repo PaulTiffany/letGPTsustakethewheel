@@ -17,9 +17,12 @@ def headers() -> dict[str, str]:
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
         raise RuntimeError("OPENROUTER_API_KEY is required")
-    return {"Authorization": f"Bearer {key}", "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/PaulTiffany/letGPTsustakethewheel",
-            "X-OpenRouter-Title": "Chad Philosophy Raster Swarm"}
+    return {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/PaulTiffany/letGPTsustakethewheel",
+        "X-OpenRouter-Title": "Chad Philosophy Raster Swarm",
+    }
 
 
 def request(url: str, payload: dict[str, Any] | None = None, timeout: int = 240) -> dict[str, Any]:
@@ -34,22 +37,56 @@ def enum_values(params: dict[str, Any], key: str) -> list[str]:
     return [str(v) for v in d.get("values", [])] if d.get("type") == "enum" else []
 
 
-def cost_estimate(endpoint: dict[str, Any]) -> float | None:
-    """Conservative 1K one-image estimate; skip token-billed outputs."""
+def desired_resolution(model_id: str, params: dict[str, Any]) -> str | None:
+    resolutions = enum_values(params, "resolution")
+    if "seedream" in model_id.lower():
+        if "2K" in resolutions:
+            return "2K"
+        # Seedream 4.5 rejects small 1K portrait outputs; omitting lets provider choose a valid default.
+        return None
+    if "1K" in resolutions:
+        return "1K"
+    return None
+
+
+def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
+    """Conservative one-image estimate for the resolution we will actually request."""
     lines = [p for p in endpoint.get("pricing", []) if p.get("billable") == "output_image"]
     if not lines or any(p.get("unit") == "token" for p in lines):
         return None
+
+    params = endpoint.get("supported_parameters", {})
+    target_res = desired_resolution(model_id, params)
     relevant = []
     for unit in ("image", "megapixel"):
-        u = [p for p in lines if p.get("unit") == unit]
-        if not u:
+        unit_lines = [p for p in lines if p.get("unit") == unit]
+        if not unit_lines:
             continue
-        one_k = [p for p in u if "1k" in str(p.get("variant", "")).lower()]
-        chosen = max(one_k or [p for p in u if not p.get("variant")] or u,
-                     key=lambda p: float(p.get("cost_usd", 0)))
+
+        chosen = None
+        if target_res:
+            matches = [
+                p for p in unit_lines
+                if target_res.lower() in str(p.get("variant", "")).lower()
+            ]
+            if matches:
+                chosen = max(matches, key=lambda p: float(p.get("cost_usd", 0)))
+
+        if chosen is None:
+            plain = [p for p in unit_lines if not p.get("variant")]
+            if plain:
+                chosen = max(plain, key=lambda p: float(p.get("cost_usd", 0)))
+            else:
+                chosen = min(unit_lines, key=lambda p: float(p.get("cost_usd", 0)))
+
         amount = float(chosen.get("cost_usd", 0))
         if unit == "megapixel":
-            amount *= 1.25 if "1K" in enum_values(endpoint.get("supported_parameters", {}), "resolution") else 4.0
+            if target_res == "2K":
+                amount *= 4.0
+            elif target_res == "1K":
+                amount *= 1.25
+            else:
+                amount *= 4.0
         relevant.append(amount)
     return sum(relevant) if relevant else None
 
@@ -58,7 +95,7 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
     ranked = request(f"{BASE}/models?output_modalities=image&sort=design-arena-elo-high-to-low").get("data", [])
     catalog = {m["id"]: m for m in request(f"{BASE}/images/models").get("data", []) if m.get("id")}
     found = []
-    for rank, model in enumerate(ranked[:80], 1):
+    for rank, model in enumerate(ranked[:120], 1):
         mid = model.get("id")
         entry = catalog.get(mid)
         if not entry:
@@ -69,18 +106,24 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
         eps_url = urllib.parse.urljoin(ORIGIN, entry.get("endpoints", ""))
         best = None
         for ep in request(eps_url).get("endpoints", []):
-            est = cost_estimate(ep)
+            est = cost_estimate(ep, mid)
             if not ep.get("provider_tag") or est is None or est <= 0 or est > max_per_image:
                 continue
             if best is None or est < best[0]:
                 best = (est, ep)
         if best:
             est, ep = best
-            found.append({"model": mid, "name": model.get("name", mid), "rank": rank,
-                          "author": mid.split("/", 1)[0], "provider_tag": ep["provider_tag"],
-                          "provider_name": ep.get("provider_name", ep["provider_tag"]),
-                          "params": ep.get("supported_parameters", {}),
-                          "pricing": ep.get("pricing", []), "estimated_cost_usd": est})
+            found.append({
+                "model": mid,
+                "name": model.get("name", mid),
+                "rank": rank,
+                "author": mid.split("/", 1)[0],
+                "provider_tag": ep["provider_tag"],
+                "provider_name": ep.get("provider_name", ep["provider_tag"]),
+                "params": ep.get("supported_parameters", {}),
+                "pricing": ep.get("pricing", []),
+                "estimated_cost_usd": est,
+            })
     return found
 
 
@@ -94,34 +137,46 @@ def choose(candidates: list[dict[str, Any]], count: int, budget: float) -> list[
                 continue
             if planned + c["estimated_cost_usd"] > budget:
                 continue
-            picked.append(c); authors.add(c["author"]); planned += c["estimated_cost_usd"]
+            picked.append(c)
+            authors.add(c["author"])
+            planned += c["estimated_cost_usd"]
     return picked
 
 
 def art_prompt(line: dict[str, str]) -> str:
-    return f"""Create ONE original raster illustration for a public document called Chad Philosophy.
-
-The broad internet-culture archetype should read immediately as a "Chad": an absurdly handsome, square-jawed, self-possessed adult man with a strong neck and shoulders, clean contemporary hair, relaxed posture, and a calm, slightly amused, completely unbothered expression. Confident, not angry or domineering. The humor is his impossible composure.
-
-ORIGINALITY: Invent a NEW face, hair, clothing, pose, composition, and visual language. Do NOT reproduce or closely imitate a specific Yes Chad / Nordic Gamer / Wojak / Virgin-vs-Chad drawing, GigaChad photograph, celebrity, copyrighted character, logo, or named artist style. No reference image is supplied. No words, captions, labels, logos, or watermarks inside the image.
-
-TARGET: iconic internet-meme readability; polished editorial/cartoon illustration rather than glamour photography; bold silhouette; expressive facial geometry; portrait-oriented composition; unmistakably in the broad Chad-archetype distribution while remaining a new design.
-
-SECTION: {line['section']}
-LINE: {line['line']}
-SCENE BRIEF: {line['brief']}
-
-Make the scene embody that line while keeping the original Chad-like figure as the clear focal character."""
+    # Kept under 1,000 characters for providers such as Recraft.
+    prompt = (
+        "Original raster art for Chad Philosophy. Main character: absurdly handsome square-jawed adult man, "
+        "strong neck/shoulders, clean hair, relaxed posture, calm amused expression, completely unbothered; "
+        "confident, never angry or domineering. Polished editorial/cartoon meme illustration, bold silhouette, "
+        "portrait composition. Invent a NEW face, clothes, pose and scene. Do not copy any specific Chad, Wojak, "
+        "GigaChad, celebrity, copyrighted character, logo, or named artist style. No reference image. "
+        "NO VISIBLE TEXT WHATSOEVER: no words, letters, numbers, symbols, captions, labels, signs, logos, or watermarks. "
+        f"Line: {line['line']} Scene: {line['brief']} "
+        "Show the idea through action and composition; Chad-like figure is the focal character."
+    )
+    if len(prompt) > 995:
+        raise ValueError(f"art prompt unexpectedly too long: {len(prompt)}")
+    return prompt
 
 
 def payload_for(c: dict[str, Any], prompt: str) -> dict[str, Any]:
-    p: dict[str, Any] = {"model": c["model"], "prompt": prompt, "n": 1,
-                         "provider": {"only": [c["provider_tag"]], "allow_fallbacks": False}}
-    if "1K" in enum_values(c["params"], "resolution"):
-        p["resolution"] = "1K"
+    p: dict[str, Any] = {
+        "model": c["model"],
+        "prompt": prompt,
+        "n": 1,
+        "provider": {"only": [c["provider_tag"]], "allow_fallbacks": False},
+    }
+    resolution = desired_resolution(c["model"], c["params"])
+    if resolution:
+        p["resolution"] = resolution
+
     ratios = enum_values(c["params"], "aspect_ratio")
-    if "4:5" in ratios: p["aspect_ratio"] = "4:5"
-    elif "1:1" in ratios: p["aspect_ratio"] = "1:1"
+    if "4:5" in ratios:
+        p["aspect_ratio"] = "4:5"
+    elif "1:1" in ratios:
+        p["aspect_ratio"] = "1:1"
+
     if "png" in [v.lower() for v in enum_values(c["params"], "output_format")]:
         p["output_format"] = "png"
     return p
@@ -151,75 +206,141 @@ def generate(c: dict[str, Any], prompt: str, timeout: int) -> dict[str, Any]:
         return {"error": {"message": f"bad base64: {e}"}, "usage": body.get("usage")}
     if len(raw) < 10000:
         return {"error": {"message": f"suspiciously small image: {len(raw)} bytes"}, "usage": body.get("usage")}
-    return {"error": None, "usage": body.get("usage"), "media_type": media, "bytes": raw,
-            "elapsed_seconds": round(time.time() - started, 3)}
+    return {
+        "error": None,
+        "usage": body.get("usage"),
+        "media_type": media,
+        "bytes": raw,
+        "elapsed_seconds": round(time.time() - started, 3),
+    }
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lines", type=Path, default=DEFAULT_LINES)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
-    ap.add_argument("--max-artists", type=int, default=6)
-    ap.add_argument("--max-spend-usd", type=float, default=1.0)
+    ap.add_argument("--max-artists", type=int, default=12)
+    ap.add_argument("--max-spend-usd", type=float, default=2.0)
     ap.add_argument("--max-per-image-usd", type=float, default=.15)
-    ap.add_argument("--timeout", type=int, default=240)
+    ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
-    if not 1 <= a.max_artists <= 12: raise ValueError("max artists must be 1..12")
-    if not 0 < a.max_per_image_usd <= a.max_spend_usd: raise ValueError("invalid spend caps")
+
+    if not 1 <= a.max_artists <= 12:
+        raise ValueError("max artists must be 1..12")
+    if not 0 < a.max_per_image_usd <= a.max_spend_usd:
+        raise ValueError("invalid spend caps")
+
     lines = json.loads(a.lines.read_text())
     candidates = discover(a.max_per_image_usd)
     selected = choose(candidates, min(a.max_artists, len(lines)), a.max_spend_usd)
     planned = sum(c["estimated_cost_usd"] for c in selected)
+
     print(f"selected={len(selected)} planned=${planned:.4f} total_cap=${a.max_spend_usd:.2f}")
     for i, c in enumerate(selected):
         line = lines[i]
-        print(f"{i+1}. rank={c['rank']} {c['model']} via {c['provider_tag']} est=${c['estimated_cost_usd']:.4f} -> {line['line']}")
-    if a.dry_run: return 0
-    if not selected: raise RuntimeError("no image models fit predictable-cost caps")
+        resolution = desired_resolution(c["model"], c["params"]) or "provider-default"
+        print(
+            f"{i+1}. rank={c['rank']} {c['model']} via {c['provider_tag']} "
+            f"res={resolution} est=${c['estimated_cost_usd']:.4f} -> {line['line']}"
+        )
+    if a.dry_run:
+        return 0
+    if not selected:
+        raise RuntimeError("no image models fit predictable-cost caps")
 
-    imgdir = a.out_dir / "images"; imgdir.mkdir(parents=True, exist_ok=True)
+    imgdir = a.out_dir / "images"
+    imgdir.mkdir(parents=True, exist_ok=True)
     prov = a.out_dir / "provenance.jsonl"
-    if prov.exists(): raise FileExistsError(prov)
+    if prov.exists():
+        raise FileExistsError(prov)
+
     rows, actual_total = [], 0.0
     for i, c in enumerate(selected):
         line, prompt = lines[i], art_prompt(lines[i])
         print(f"[{i+1}/{len(selected)}] {c['model']} -> {line['id']}", flush=True)
         result = generate(c, prompt, a.timeout)
         usage = result.get("usage") or {}
-        try: actual = float(usage["cost"]) if usage.get("cost") is not None else None
-        except (TypeError, ValueError): actual = None
-        if actual is not None: actual_total += actual
-        row = {"schema_version": 1, "philosophy": line, **{k: c[k] for k in
-               ("model","name","rank","author","provider_tag","provider_name","pricing","estimated_cost_usd")},
-               "actual_cost_usd": actual, "actual_cumulative_cost_usd": actual_total,
-               "prompt": prompt, "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
-               "usage": usage, "reference_image_supplied": False, "error": result.get("error"),
-               "image_file": None, "image_sha256": None, "media_type": result.get("media_type")}
+        try:
+            actual = float(usage["cost"]) if usage.get("cost") is not None else None
+        except (TypeError, ValueError):
+            actual = None
+        if actual is not None:
+            actual_total += actual
+
+        row = {
+            "schema_version": 2,
+            "philosophy": line,
+            **{k: c[k] for k in (
+                "model", "name", "rank", "author", "provider_tag",
+                "provider_name", "pricing", "estimated_cost_usd"
+            )},
+            "requested_resolution": desired_resolution(c["model"], c["params"]),
+            "actual_cost_usd": actual,
+            "actual_cumulative_cost_usd": actual_total,
+            "prompt": prompt,
+            "prompt_chars": len(prompt),
+            "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+            "usage": usage,
+            "reference_image_supplied": False,
+            "visible_text_forbidden": True,
+            "error": result.get("error"),
+            "image_file": None,
+            "image_sha256": None,
+            "media_type": result.get("media_type"),
+        }
+
         if not row["error"]:
-            raw = result["bytes"]; ext = EXT[result["media_type"]]
+            raw = result["bytes"]
+            ext = EXT[result["media_type"]]
             name = f"{i+1:02d}-{slug(line['id'])}--{slug(c['model'])}{ext}"
-            (imgdir / name).write_bytes(raw); row["image_file"] = name
-            row["image_sha256"] = hashlib.sha256(raw).hexdigest(); row["image_bytes"] = len(raw)
-        with prov.open("a", encoding="utf-8") as f: f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            (imgdir / name).write_bytes(raw)
+            row["image_file"] = name
+            row["image_sha256"] = hashlib.sha256(raw).hexdigest()
+            row["image_bytes"] = len(raw)
+
+        with prov.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
         rows.append(row)
+
         if actual_total >= a.max_spend_usd:
             print(f"reported cost reached ${actual_total:.4f}; stopping")
             break
 
-    gallery = ["# Chad Philosophy — raster swarm", "", "Original generations; no reference image was supplied.", ""]
+    gallery = [
+        "# Chad Philosophy — raster swarm",
+        "",
+        "Original generations; no reference image was supplied.",
+        "",
+    ]
     for r in rows:
-        if r["error"] or not r["image_file"]: continue
+        if r["error"] or not r["image_file"]:
+            continue
         line = r["philosophy"]
-        gallery += [f"## {line['line']}", "", f"![{line['line']}](images/{r['image_file']})", "",
-                    f"*annoned by `{r['model']}` via `{r['provider_tag']}` — original raster generation, no reference image supplied.*", ""]
+        gallery += [
+            f"## {line['line']}",
+            "",
+            f"![{line['line']}](images/{r['image_file']})",
+            "",
+            f"*annoned by `{r['model']}` via `{r['provider_tag']}` — "
+            "original raster generation, no reference image supplied.*",
+            "",
+        ]
     (a.out_dir / "gallery.md").write_text("\n".join(gallery) + "\n")
-    summary = {"selected": len(selected), "attempted": len(rows),
-               "successful": sum(not r["error"] and bool(r["image_file"]) for r in rows),
-               "planned_estimated_cost_usd": planned, "reported_actual_cost_usd": actual_total,
-               "max_spend_usd": a.max_spend_usd, "max_per_image_usd": a.max_per_image_usd}
+
+    summary = {
+        "selected": len(selected),
+        "attempted": len(rows),
+        "successful": sum(not r["error"] and bool(r["image_file"]) for r in rows),
+        "planned_estimated_cost_usd": planned,
+        "reported_actual_cost_usd": actual_total,
+        "max_spend_usd": a.max_spend_usd,
+        "max_per_image_usd": a.max_per_image_usd,
+    }
     (a.out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print(json.dumps(summary, indent=2)); return 0
+    print(json.dumps(summary, indent=2))
+    return 0
 
 
-if __name__ == "__main__": raise SystemExit(main())
+if __name__ == "__main__":
+    raise SystemExit(main())
