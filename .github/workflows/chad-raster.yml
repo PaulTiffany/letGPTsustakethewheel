@@ -7,9 +7,9 @@ on:
         description: "Discover/rank image models and show planned spend; generate nothing"
         required: true
         type: boolean
-        default: false
+        default: true
       max_artists:
-        description: "Number of distinct raster model-artists"
+        description: "Number of raster target slots"
         required: true
         type: choice
         options:
@@ -39,7 +39,7 @@ on:
           - "0.15"
           - "0.25"
           - "0.50"
-        default: "0.15"
+        default: "0.50"
 
 permissions:
   contents: read
