@@ -12,8 +12,6 @@ DEFAULT_LINES = Path("chad_lines.json")
 DEFAULT_OUT = Path("results/chad-raster")
 EXT = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 
-# Already-published model IDs stay retired so accepted work is not silently
-# regenerated. Invalid/rights-blocked IDs stay hard-blocked.
 PUBLISHED_MODELS = {
     "bytedance-seed/seedream-4.5",
     "qwen/qwen-image-3",
@@ -25,33 +23,35 @@ PUBLISHED_MODELS = {
     "black-forest-labs/flux.2-flex",
     "x-ai/grok-imagine-image-quality",
     "recraft/recraft-v4.1-utility",
+    "recraft/recraft-v4-pro",
+    "recraft/recraft-v4.1-pro",
+    "recraft/recraft-v4.1-utility-pro",
 }
 HARD_BLOCKED_MODELS = {
     "sourceful/riverflow-v2-fast",
     "recraft/recraft-v4-vector",
 }
-
-# These produced valid raster bytes in earlier rounds and are explicitly eligible
-# for another generation. Some missed their prior target; two published models
-# are deliberately reused only on new targets to complete this round with better
-# provider diversity.
 REROLL_MODELS = {
-    # Published before, but explicitly allowed another generation on new targets.
-    "qwen/qwen-image-3-pro",
-    "x-ai/grok-imagine-image-2.0",
     "black-forest-labs/flux.2-klein-4b",
     "recraft/recraft-v3",
     "bytedance-seed/seedream-5-0-lite",
-    "recraft/recraft-v4-pro",
     "black-forest-labs/flux.2-max",
     "recraft/recraft-v4.1",
-    "recraft/recraft-v4.1-pro",
-    "recraft/recraft-v4.1-utility-pro",
 }
-
 EXCLUDED_MODELS = (PUBLISHED_MODELS - REROLL_MODELS) | HARD_BLOCKED_MODELS
 EXCLUDED_AUTHORS = {"sourceful"}
 
+# Conservative one-image planning ceilings for token-billed dedicated image
+# endpoints. Requests use ~1K output where available and medium quality for
+# OpenAI models. Actual provider-reported cost is recorded separately.
+TOKEN_MODEL_ESTIMATES = {
+    "google/gemini-3.1-flash-lite-image": 0.06,
+    "openai/gpt-image-1-mini": 0.08,
+    "google/gemini-3.1-flash-image": 0.12,
+    "openai/gpt-image-2": 0.18,
+    "google/gemini-3-pro-image": 0.20,
+    "openai/gpt-image-1": 0.22,
+}
 
 def headers() -> dict[str, str]:
     key = os.environ.get("OPENROUTER_API_KEY")
@@ -64,18 +64,15 @@ def headers() -> dict[str, str]:
         "X-OpenRouter-Title": "Chad Philosophy Raster Swarm",
     }
 
-
 def request(url: str, payload: dict[str, Any] | None = None, timeout: int = 240) -> dict[str, Any]:
     data = None if payload is None else json.dumps(payload).encode()
     req = urllib.request.Request(url, data=data, headers=headers(), method="POST" if data else "GET")
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
-
 def enum_values(params: dict[str, Any], key: str) -> list[str]:
     d = params.get(key) or {}
     return [str(v) for v in d.get("values", [])] if d.get("type") == "enum" else []
-
 
 def desired_resolution(model_id: str, params: dict[str, Any]) -> str | None:
     resolutions = enum_values(params, "resolution")
@@ -87,27 +84,38 @@ def desired_resolution(model_id: str, params: dict[str, Any]) -> str | None:
         return "1K"
     return None
 
+def estimate_basis(endpoint: dict[str, Any], model_id: str) -> str | None:
+    lines = [p for p in endpoint.get("pricing", []) if p.get("billable") == "output_image"]
+    if any(p.get("unit") in {"image", "megapixel"} for p in lines):
+        return "provider-image-pricing"
+    if any(p.get("unit") == "token" for p in lines) and model_id in TOKEN_MODEL_ESTIMATES:
+        return "manual-token-ceiling"
+    return None
 
 def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
-    """Conservative one-image estimate for the resolution we will actually request."""
+    """Conservative one-image planning estimate; actual usage is recorded later."""
     lines = [p for p in endpoint.get("pricing", []) if p.get("billable") == "output_image"]
-    if not lines or any(p.get("unit") == "token" for p in lines):
+    if not lines:
+        return None
+
+    fixed = [p for p in lines if p.get("unit") in {"image", "megapixel"}]
+    if not fixed:
+        if any(p.get("unit") == "token" for p in lines):
+            return TOKEN_MODEL_ESTIMATES.get(model_id)
         return None
 
     params = endpoint.get("supported_parameters", {})
     target_res = desired_resolution(model_id, params)
     relevant = []
     for unit in ("image", "megapixel"):
-        unit_lines = [p for p in lines if p.get("unit") == unit]
+        unit_lines = [p for p in fixed if p.get("unit") == unit]
         if not unit_lines:
             continue
-
         chosen = None
         if target_res:
             matches = [p for p in unit_lines if target_res.lower() in str(p.get("variant", "")).lower()]
             if matches:
                 chosen = max(matches, key=lambda p: float(p.get("cost_usd", 0)))
-
         if chosen is None:
             plain = [p for p in unit_lines if not p.get("variant")]
             chosen = (
@@ -115,32 +123,23 @@ def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
                 if plain
                 else min(unit_lines, key=lambda p: float(p.get("cost_usd", 0)))
             )
-
         amount = float(chosen.get("cost_usd", 0))
         if unit == "megapixel":
-            if target_res == "2K":
-                amount *= 4.0
-            elif target_res == "1K":
-                amount *= 1.25
-            else:
-                amount *= 4.0
+            amount *= 4.0 if target_res == "2K" else 1.25 if target_res == "1K" else 4.0
         relevant.append(amount)
     return sum(relevant) if relevant else None
 
-
 def discover(max_per_image: float) -> list[dict[str, Any]]:
     ranked = request(f"{BASE}/models?output_modalities=image&sort=design-arena-elo-high-to-low").get("data", [])
-    catalog = {m["id"]: m for m in request(f"{BASE}/images/models").get("data", []) if m.get("id")}
+    rank_map = {m.get("id"): i for i, m in enumerate(ranked, 1) if m.get("id")}
+    catalog = [m for m in request(f"{BASE}/images/models").get("data", []) if m.get("id")]
     found = []
-    for rank, model in enumerate(ranked[:160], 1):
-        mid = model.get("id")
-        if not mid or mid in EXCLUDED_MODELS:
+    for entry in catalog:
+        mid = entry["id"]
+        if mid in EXCLUDED_MODELS:
             continue
         author = mid.split("/", 1)[0]
         if author in EXCLUDED_AUTHORS or "vector" in mid.lower():
-            continue
-        entry = catalog.get(mid)
-        if not entry:
             continue
         arch = entry.get("architecture", {})
         if "text" not in arch.get("input_modalities", []) or "image" not in arch.get("output_modalities", []):
@@ -157,18 +156,19 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
             est, ep = best
             found.append({
                 "model": mid,
-                "name": model.get("name", mid),
-                "rank": rank,
+                "name": entry.get("name", mid),
+                "rank": rank_map.get(mid, 9999),
                 "author": author,
                 "provider_tag": ep["provider_tag"],
                 "provider_name": ep.get("provider_name", ep["provider_tag"]),
-                "params": ep.get("supported_parameters", {}),
+                "params": ep.get("supported_parameters") or entry.get("supported_parameters", {}),
                 "pricing": ep.get("pricing", []),
                 "estimated_cost_usd": est,
+                "estimate_basis": estimate_basis(ep, mid),
                 "selection_kind": "reroll" if mid in REROLL_MODELS else "new",
             })
+    found.sort(key=lambda c: (c["estimated_cost_usd"], c["rank"], c["model"]))
     return found
-
 
 def choose_for_lines(
     candidates: list[dict[str, Any]],
@@ -176,7 +176,7 @@ def choose_for_lines(
     count: int,
     budget: float,
 ) -> list[tuple[dict[str, str], dict[str, Any]]]:
-    """Honor explicit rerolls first, then fill remaining targets with fresh models."""
+    """Prefer fresh model authors, then fresh repeats, then rerolls."""
     targets = lines[:count]
     by_model = {c["model"]: c for c in candidates}
     assigned: dict[int, dict[str, Any]] = {}
@@ -187,9 +187,7 @@ def choose_for_lines(
     for i, line in enumerate(targets):
         mid = line.get("preferred_model")
         c = by_model.get(mid) if mid else None
-        if not c or c["model"] in used_models:
-            continue
-        if planned + c["estimated_cost_usd"] > budget:
+        if not c or c["model"] in used_models or planned + c["estimated_cost_usd"] > budget:
             continue
         assigned[i] = c
         used_models.add(c["model"])
@@ -220,12 +218,9 @@ def choose_for_lines(
     fill(fresh, False)
     fill(rerolls, True)
     fill(rerolls, False)
-
     return [(targets[i], assigned[i]) for i in range(len(targets)) if i in assigned]
 
-
 def art_prompt(line: dict[str, str]) -> str:
-    # Kept under 1,000 characters for providers such as Recraft.
     prompt = (
         "Original raster art for Chad Philosophy. Focal character: handsome square-jawed adult man, strong neck and shoulders, "
         "relaxed posture, calm amused expression, completely unbothered; confident, never angry or domineering. "
@@ -240,7 +235,6 @@ def art_prompt(line: dict[str, str]) -> str:
         raise ValueError(f"art prompt unexpectedly too long: {len(prompt)}")
     return prompt
 
-
 def payload_for(c: dict[str, Any], prompt: str) -> dict[str, Any]:
     p: dict[str, Any] = {
         "model": c["model"],
@@ -253,19 +247,22 @@ def payload_for(c: dict[str, Any], prompt: str) -> dict[str, Any]:
         p["resolution"] = resolution
 
     ratios = enum_values(c["params"], "aspect_ratio")
-    if "4:5" in ratios:
-        p["aspect_ratio"] = "4:5"
-    elif "1:1" in ratios:
-        p["aspect_ratio"] = "1:1"
+    for ratio in ("4:5", "3:4", "2:3", "1:1"):
+        if ratio in ratios:
+            p["aspect_ratio"] = ratio
+            break
 
-    if "png" in [v.lower() for v in enum_values(c["params"], "output_format")]:
+    formats = [v.lower() for v in enum_values(c["params"], "output_format")]
+    if "png" in formats:
         p["output_format"] = "png"
-    return p
 
+    qualities = [v.lower() for v in enum_values(c["params"], "quality")]
+    if c["model"].startswith("openai/") and "medium" in qualities:
+        p["quality"] = "medium"
+    return p
 
 def slug(s: str) -> str:
     return "-".join("".join(ch if ch.isalnum() else " " for ch in s.lower()).split())[:70]
-
 
 def generate(c: dict[str, Any], prompt: str, timeout: int) -> dict[str, Any]:
     started = time.time()
@@ -294,7 +291,6 @@ def generate(c: dict[str, Any], prompt: str, timeout: int) -> dict[str, Any]:
         "bytes": raw,
         "elapsed_seconds": round(time.time() - started, 3),
     }
-
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -328,7 +324,7 @@ def main() -> int:
         tag = "pinned-reroll" if preferred else c["selection_kind"]
         print(
             f"{i}. rank={c['rank']} kind={tag} {c['model']} via {c['provider_tag']} "
-            f"res={resolution} est=${c['estimated_cost_usd']:.4f} -> {line['line']}"
+            f"res={resolution} est=${c['estimated_cost_usd']:.4f} basis={c['estimate_basis']} -> {line['line']}"
         )
     if a.dry_run:
         return 0
@@ -355,11 +351,11 @@ def main() -> int:
             actual_total += actual
 
         row = {
-            "schema_version": 3,
+            "schema_version": 4,
             "philosophy": line,
             **{k: c[k] for k in (
                 "model", "name", "rank", "author", "provider_tag",
-                "provider_name", "pricing", "estimated_cost_usd", "selection_kind"
+                "provider_name", "pricing", "estimated_cost_usd", "estimate_basis", "selection_kind"
             )},
             "preferred_model_matched": line.get("preferred_model") == c["model"],
             "requested_resolution": desired_resolution(c["model"], c["params"]),
@@ -394,23 +390,15 @@ def main() -> int:
             print(f"reported cost reached ${actual_total:.4f}; stopping")
             break
 
-    gallery = [
-        "# Chad Philosophy — raster swarm",
-        "",
-        "Original generations; no reference image was supplied.",
-        "",
-    ]
+    gallery = ["# Chad Philosophy — raster swarm", "", "Original generations; no reference image was supplied.", ""]
     for r in rows:
         if r["error"] or not r["image_file"]:
             continue
         line = r["philosophy"]
         gallery += [
-            f"## {line['line']}",
-            "",
-            f"![{line['line']}](images/{r['image_file']})",
-            "",
-            f"*annoned by `{r['model']}` via `{r['provider_tag']}` — "
-            f"{r['selection_kind']} raster generation, no reference image supplied.*",
+            f"## {line['line']}", "",
+            f"![{line['line']}](images/{r['image_file']})", "",
+            f"*annoned by `{r['model']}` via `{r['provider_tag']}` — {r['selection_kind']} raster generation, no reference image supplied.*",
             "",
         ]
     (a.out_dir / "gallery.md").write_text("\n".join(gallery) + "\n")
@@ -429,7 +417,6 @@ def main() -> int:
     (a.out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
