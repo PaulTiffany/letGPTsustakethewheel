@@ -1,56 +1,38 @@
 [
   {
-    "id": "yes",
-    "section": "What does Chad mean?",
-    "line": "Yes.",
-    "brief": "Calmly receive a potentially embarrassing fact without collapsing, arguing, or performing dominance."
-  },
-  {
     "id": "allowed-to-fail",
     "section": "A good idea must be allowed to fail",
     "line": "A good idea must be allowed to fail.",
-    "brief": "A real test has a visible path to failure; a protected idea is theater rather than inquiry."
-  },
-  {
-    "id": "leave-room",
-    "section": "Leave room to be wrong",
-    "line": "Leave room to be wrong.",
-    "brief": "Build with enough slack that one mistake, tired operator, failed tool, or bad assumption can be noticed and repaired instead of collapsing the whole effort."
+    "brief": "Show a real experiment with an openly visible failure outcome that the calm operator accepts and learns from; the apparatus must be capable of genuinely failing, not merely surviving adversity."
   },
   {
     "id": "capability-not-permission",
     "section": "Capability is not permission",
     "line": "Capability is not permission.",
-    "brief": "A more capable machine reaches an independently controlled gate that can still refuse deployment; increased ability does not automatically widen authority."
+    "brief": "Show a powerful machine reaching a visibly separate external gate controlled by a human operator; the gate can still refuse action. Convey increased capability without increased authority, with no pseudo-text or interface lettering."
   },
   {
     "id": "stop-path",
     "section": "Keep the stop path outside the failure",
-    "line": "A stop button is only real if you can still reach it when things go wrong.",
-    "brief": "Show an operator retaining a clear independent shutdown path while the main machine or interface becomes overloaded, noisy, or unstable."
+    "line": "The control loop must remain outside and operationally independent of the system it controls.",
+    "brief": "Show two unmistakably distinct causal paths: one noisy or failing machine path, and one physically separate, simple, reachable operator monitoring-and-shutdown path that remains clear and functional. The failing system must not share or control the stop path. No interface text, labels, or decorative symbols."
   },
   {
     "id": "jevons-intelligence",
     "section": "Intelligence has a Jevons problem",
     "line": "Make intelligence abundant without making authority automatic.",
-    "brief": "Many cheap machine-generated proposals multiply rapidly, while a separate narrow gate preserves deliberate judgment before consequential action."
-  },
-  {
-    "id": "not-because-yours",
-    "section": "This philosophy may also be wrong",
-    "line": "Do not defend something merely because it is yours.",
-    "brief": "Release attachment to one's own idea when reality supplies a better one."
+    "brief": "Show many cheap machine-generated proposals multiplying rapidly and converging on one narrow external authorization gate controlled separately by a human operator. Abundant proposal generation must remain visibly distinct from scarce authority."
   },
   {
     "id": "tools-say-no",
     "section": "Build tools that can disagree with you",
     "line": "Build tools that can say no to you.",
-    "brief": "A useful instrument, experiment, friend, or computer can contradict its creator."
+    "brief": "Show a useful instrument or computer visibly preventing or contradicting the operator's intended action through its physical behavior or measurement, while the operator calmly accepts the contradiction. Do not rely on written words or signs."
   },
   {
     "id": "no-defensive-branch",
     "section": "The Chad test",
     "line": "There is no special step called: Become defensive.",
-    "brief": "When a claim arrives: yes if true, show why if false, test if uncertain, and continue."
+    "brief": "When a claim arrives, show a calm sequence of checking reality and continuing rather than arguing, posturing, or escalating; communicate the branch structure visually without visible text."
   }
 ]
