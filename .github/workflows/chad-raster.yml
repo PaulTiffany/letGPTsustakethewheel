@@ -27,7 +27,8 @@ on:
           - "0.50"
           - "1.00"
           - "2.00"
-        default: "2.00"
+          - "5.00"
+        default: "5.00"
       max_per_image_usd:
         description: "Census eligibility ceiling for predictable one-image cost"
         required: true
