@@ -12,6 +12,25 @@ DEFAULT_LINES = Path("chad_lines.json")
 DEFAULT_OUT = Path("results/chad-raster")
 EXT = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
 
+# Every model attempted in Raster Chad run #3 (2026-08-17) is excluded from
+# this round. Eleven returned rasters; recraft-v4-vector returned SVG and was
+# rejected. This makes the next census genuinely explore new model IDs rather
+# than silently regenerating prior work.
+EXCLUDED_MODELS = {
+    "black-forest-labs/flux.2-klein-4b",
+    "bytedance-seed/seedream-4.5",
+    "qwen/qwen-image-3",
+    "recraft/recraft-v3",
+    "sourceful/riverflow-v2-fast",
+    "x-ai/grok-imagine-image-2.0",
+    "black-forest-labs/flux.2-pro",
+    "bytedance-seed/seedream-5-0-lite",
+    "bytedance-seed/seedream-5-0-pro",
+    "qwen/qwen-image-3-pro",
+    "recraft/recraft-v4",
+    "recraft/recraft-v4-vector",
+}
+
 
 def headers() -> dict[str, str]:
     key = os.environ.get("OPENROUTER_API_KEY")
@@ -97,6 +116,8 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
     found = []
     for rank, model in enumerate(ranked[:120], 1):
         mid = model.get("id")
+        if not mid or mid in EXCLUDED_MODELS:
+            continue
         entry = catalog.get(mid)
         if not entry:
             continue
@@ -236,7 +257,8 @@ def main() -> int:
     selected = choose(candidates, min(a.max_artists, len(lines)), a.max_spend_usd)
     planned = sum(c["estimated_cost_usd"] for c in selected)
 
-    print(f"selected={len(selected)} planned=${planned:.4f} total_cap=${a.max_spend_usd:.2f}")
+    print(f"excluded_prior_models={len(EXCLUDED_MODELS)}")
+    print(f"targets={len(lines)} selected={len(selected)} planned=${planned:.4f} total_cap=${a.max_spend_usd:.2f}")
     for i, c in enumerate(selected):
         line = lines[i]
         resolution = desired_resolution(c["model"], c["params"]) or "provider-default"
