@@ -3,36 +3,65 @@
     "id": "allowed-to-fail",
     "section": "A good idea must be allowed to fail",
     "line": "A good idea must be allowed to fail.",
-    "brief": "Show a real experiment with an openly visible failure outcome that the calm operator accepts and learns from; the apparatus must be capable of genuinely failing, not merely surviving adversity."
+    "brief": "A tensile-test specimen visibly snaps in a real experiment while the calm operator studies the failure and adjusts the apparatus; failure is genuine evidence, not disaster.",
+    "preferred_model": "recraft/recraft-v4-pro"
   },
   {
     "id": "capability-not-permission",
     "section": "Capability is not permission",
     "line": "Capability is not permission.",
-    "brief": "Show a powerful machine reaching a visibly separate external gate controlled by a human operator; the gate can still refuse action. Convey increased capability without increased authority, with no pseudo-text or interface lettering."
+    "brief": "A powerful autonomous machine is halted at a physically separate barrier controlled by a human outside its workspace; greater capability does not move the barrier or grant passage. No displays or lettering.",
+    "preferred_model": "black-forest-labs/flux.2-max"
   },
   {
     "id": "stop-path",
     "section": "Keep the stop path outside the failure",
     "line": "The control loop must remain outside and operationally independent of the system it controls.",
-    "brief": "Show two unmistakably distinct causal paths: one noisy or failing machine path, and one physically separate, simple, reachable operator monitoring-and-shutdown path that remains clear and functional. The failing system must not share or control the stop path. No interface text, labels, or decorative symbols."
+    "brief": "Two physically separate paths: an overloaded machine path full of activity and a simple hardwired operator monitoring-and-stop path on separate hardware that stays clear and reachable. No shared console.",
+    "preferred_model": "recraft/recraft-v4.1"
+  },
+  {
+    "id": "telemetry-not-control",
+    "section": "Keep the stop path outside the failure",
+    "line": "More telemetry is not necessarily more control.",
+    "brief": "An operator faces an overwhelming wall of noisy monitors and cables, while one separate simple physical gauge and cutoff remains legible and usable. Show information overload reducing control rather than increasing it."
   },
   {
     "id": "jevons-intelligence",
     "section": "Intelligence has a Jevons problem",
     "line": "Make intelligence abundant without making authority automatic.",
-    "brief": "Show many cheap machine-generated proposals multiplying rapidly and converging on one narrow external authorization gate controlled separately by a human operator. Abundant proposal generation must remain visibly distinct from scarce authority."
+    "brief": "Many machines rapidly produce blank proposal cards or candidate objects that funnel toward one narrow external human-controlled gate; abundant generation cannot bypass scarce authorization.",
+    "preferred_model": "recraft/recraft-v4.1-pro"
+  },
+  {
+    "id": "recursive-authority",
+    "section": "Intelligence has a Jevons problem",
+    "line": "Recursive capability is not recursive authority.",
+    "brief": "A self-improving machine visibly gains more tools, arms, or stages behind a fixed external barrier whose separately controlled permission mechanism does not expand with the machine."
   },
   {
     "id": "tools-say-no",
     "section": "Build tools that can disagree with you",
     "line": "Build tools that can say no to you.",
-    "brief": "Show a useful instrument or computer visibly preventing or contradicting the operator's intended action through its physical behavior or measurement, while the operator calmly accepts the contradiction. Do not rely on written words or signs."
+    "brief": "A precision go/no-go fixture physically rejects an oversized component the operator expected to fit; the calm operator accepts the instrument's contradiction and changes course. No written labels.",
+    "preferred_model": "recraft/recraft-v4.1-utility-pro"
   },
   {
     "id": "no-defensive-branch",
     "section": "The Chad test",
     "line": "There is no special step called: Become defensive.",
-    "brief": "When a claim arrives, show a calm sequence of checking reality and continuing rather than arguing, posturing, or escalating; communicate the branch structure visually without visible text."
+    "brief": "Someone points out a cracked part; Chad immediately inspects and repairs it while the argument falls away, choosing reality-testing over posturing or escalation."
+  },
+  {
+    "id": "working-demo",
+    "section": "Reality gets the final vote",
+    "line": "A working demonstration is better than a confident speech.",
+    "brief": "Foreground: Chad quietly runs a real machine that visibly works. Background: a charismatic speaker gestures dramatically beside an inert untested prototype. Evidence wins without confrontation."
+  },
+  {
+    "id": "counterexample",
+    "section": "Reality gets the final vote",
+    "line": "A counterexample is better than a hundred people agreeing.",
+    "brief": "Many identical test specimens appear fine, but one decisive specimen fails under the same real test; Chad focuses on the single failure rather than an approving crowd."
   }
 ]
