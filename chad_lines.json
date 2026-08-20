@@ -6,22 +6,34 @@
     "brief": "Calmly receive a potentially embarrassing fact without collapsing, arguing, or performing dominance."
   },
   {
-    "id": "fact-not-shame",
-    "section": "The most important distinction",
-    "line": "Accept the fact. Do not automatically accept the shame.",
-    "brief": "Separate useful information from the social humiliation someone tried to attach to it."
-  },
-  {
-    "id": "reality-votes",
-    "section": "Reality gets the final vote",
-    "line": "Reality gets the final vote.",
-    "brief": "Evidence, experiment, or the world itself outranks rhetoric, prestige, and applause."
-  },
-  {
     "id": "allowed-to-fail",
     "section": "A good idea must be allowed to fail",
     "line": "A good idea must be allowed to fail.",
     "brief": "A real test has a visible path to failure; a protected idea is theater rather than inquiry."
+  },
+  {
+    "id": "leave-room",
+    "section": "Leave room to be wrong",
+    "line": "Leave room to be wrong.",
+    "brief": "Build with enough slack that one mistake, tired operator, failed tool, or bad assumption can be noticed and repaired instead of collapsing the whole effort."
+  },
+  {
+    "id": "capability-not-permission",
+    "section": "Capability is not permission",
+    "line": "Capability is not permission.",
+    "brief": "A more capable machine reaches an independently controlled gate that can still refuse deployment; increased ability does not automatically widen authority."
+  },
+  {
+    "id": "stop-path",
+    "section": "Keep the stop path outside the failure",
+    "line": "A stop button is only real if you can still reach it when things go wrong.",
+    "brief": "Show an operator retaining a clear independent shutdown path while the main machine or interface becomes overloaded, noisy, or unstable."
+  },
+  {
+    "id": "jevons-intelligence",
+    "section": "Intelligence has a Jevons problem",
+    "line": "Make intelligence abundant without making authority automatic.",
+    "brief": "Many cheap machine-generated proposals multiply rapidly, while a separate narrow gate preserves deliberate judgment before consequential action."
   },
   {
     "id": "not-because-yours",
@@ -30,40 +42,10 @@
     "brief": "Release attachment to one's own idea when reality supplies a better one."
   },
   {
-    "id": "no-villains",
-    "section": "Do not invent villains",
-    "line": "Do not invent villains.",
-    "brief": "Disagreement need not imply stupidity, jealousy, corruption, fear, or malice."
-  },
-  {
-    "id": "truth-not-reputation",
-    "section": "Reputation and truth are different questions",
-    "line": "What is true? is different from How does this make me look?",
-    "brief": "Visually separate truth-seeking from reputation management without making either invisible."
-  },
-  {
     "id": "tools-say-no",
     "section": "Build tools that can disagree with you",
     "line": "Build tools that can say no to you.",
     "brief": "A useful instrument, experiment, friend, or computer can contradict its creator."
-  },
-  {
-    "id": "receipts",
-    "section": "Keep track of where things came from",
-    "line": "Keep the receipts. Then check the claim.",
-    "brief": "Preserve provenance and attribution while still testing the object itself."
-  },
-  {
-    "id": "play",
-    "section": "Play is allowed",
-    "line": "Play is allowed.",
-    "brief": "Exploration can be ridiculous and joyful when the boundary between play and assertion stays visible."
-  },
-  {
-    "id": "stop",
-    "section": "Know when to stop",
-    "line": "More words are not necessarily more wisdom.",
-    "brief": "Stop elaborating after the useful distinction is already held."
   },
   {
     "id": "no-defensive-branch",
