@@ -56,12 +56,14 @@
     "id": "working-demo",
     "section": "Reality gets the final vote",
     "line": "A working demonstration is better than a confident speech.",
-    "brief": "Foreground: Chad quietly runs a real machine that visibly works. Background: a charismatic speaker gestures dramatically beside an inert untested prototype. Evidence wins without confrontation."
+    "brief": "Foreground: Chad quietly runs a real machine that visibly works. Background: a charismatic speaker gestures dramatically beside an inert untested prototype. Evidence wins without confrontation.",
+    "preferred_model": "qwen/qwen-image-3-pro"
   },
   {
     "id": "counterexample",
     "section": "Reality gets the final vote",
     "line": "A counterexample is better than a hundred people agreeing.",
-    "brief": "Many identical test specimens appear fine, but one decisive specimen fails under the same real test; Chad focuses on the single failure rather than an approving crowd."
+    "brief": "Many identical test specimens appear fine, but one decisive specimen fails under the same real test; Chad focuses on the single failure rather than an approving crowd.",
+    "preferred_model": "x-ai/grok-imagine-image-2.0"
   }
 ]

@@ -31,10 +31,14 @@ HARD_BLOCKED_MODELS = {
     "recraft/recraft-v4-vector",
 }
 
-# These produced valid raster bytes in earlier rounds but were not accepted for
-# publication. They are explicitly eligible for a reroll, preferably on the
-# target they previously missed after its brief has been sharpened.
+# These produced valid raster bytes in earlier rounds and are explicitly eligible
+# for another generation. Some missed their prior target; two published models
+# are deliberately reused only on new targets to complete this round with better
+# provider diversity.
 REROLL_MODELS = {
+    # Published before, but explicitly allowed another generation on new targets.
+    "qwen/qwen-image-3-pro",
+    "x-ai/grok-imagine-image-2.0",
     "black-forest-labs/flux.2-klein-4b",
     "recraft/recraft-v3",
     "bytedance-seed/seedream-5-0-lite",
@@ -45,7 +49,7 @@ REROLL_MODELS = {
     "recraft/recraft-v4.1-utility-pro",
 }
 
-EXCLUDED_MODELS = PUBLISHED_MODELS | HARD_BLOCKED_MODELS
+EXCLUDED_MODELS = (PUBLISHED_MODELS - REROLL_MODELS) | HARD_BLOCKED_MODELS
 EXCLUDED_AUTHORS = {"sourceful"}
 
 
