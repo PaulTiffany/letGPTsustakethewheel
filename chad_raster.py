@@ -52,7 +52,7 @@ EXCLUDED_AUTHORS = {"sourceful"}
 # Conservative one-image planning ceilings for token-billed dedicated image
 # endpoints. Requests use ~1K output where available and medium quality for
 # OpenAI models. Actual provider-reported cost is recorded separately.
-TOKEN_MODEL_ESTIMATES = {
+MANUAL_MODEL_ESTIMATES = {
     # Previously attempted token-billed models retained for rerolls.
     "google/gemini-2.5-flash-image": 0.06,
     "google/gemini-3.1-flash-lite-image": 0.06,
@@ -66,6 +66,12 @@ TOKEN_MODEL_ESTIMATES = {
     # claims about exact billing. Actual OpenRouter usage cost is recorded.
     "microsoft/mai-image-2.5": 0.15,
     "microsoft/mai-image-2.5-pro": 0.18,
+    # OpenRouter currently advertises Krea per-image prices; retain a manual
+    # fallback because some endpoint pricing records are not parsed by the
+    # generic output_image billable filter.
+    "krea/krea-2-medium-turbo": 0.02,
+    "krea/krea-2-medium": 0.04,
+    "krea/krea-2-large": 0.07,
     "openai/gpt-5-image-mini": 0.08,
     "openai/gpt-5-image": 0.30,
     "openai/gpt-5.4-image-2": 0.20,
@@ -109,8 +115,10 @@ def estimate_basis(endpoint: dict[str, Any], model_id: str) -> str | None:
     lines = [p for p in endpoint.get("pricing", []) if p.get("billable") == "output_image"]
     if any(p.get("unit") in {"image", "megapixel"} for p in lines):
         return "provider-image-pricing"
-    if any(p.get("unit") == "token" for p in lines) and model_id in TOKEN_MODEL_ESTIMATES:
+    if any(p.get("unit") == "token" for p in lines) and model_id in MANUAL_MODEL_ESTIMATES:
         return "manual-token-ceiling"
+    if model_id in MANUAL_MODEL_ESTIMATES:
+        return "manual-model-ceiling"
     return None
 
 
@@ -118,13 +126,11 @@ def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
     """Conservative one-image planning estimate; actual usage is recorded later."""
     lines = [p for p in endpoint.get("pricing", []) if p.get("billable") == "output_image"]
     if not lines:
-        return None
+        return MANUAL_MODEL_ESTIMATES.get(model_id)
 
     fixed = [p for p in lines if p.get("unit") in {"image", "megapixel"}]
     if not fixed:
-        if any(p.get("unit") == "token" for p in lines):
-            return TOKEN_MODEL_ESTIMATES.get(model_id)
-        return None
+        return MANUAL_MODEL_ESTIMATES.get(model_id)
 
     params = endpoint.get("supported_parameters", {})
     target_res = desired_resolution(model_id, params)
