@@ -1,0 +1,46 @@
+name: Index latest Chad artifact
+
+on:
+  push:
+    branches: [chad-raster-next-round]
+    paths:
+      - '.github/workflows/index-latest-chad-artifact.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chad-raster-next-round
+
+      - name: Record newest successful Raster Chad artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          runs="$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "${api}/actions/workflows/chad-raster.yml/runs?event=workflow_dispatch&status=completed&per_page=20")"
+          found=0
+          for run_id in $(printf '%s' "$runs" | jq -r '.workflow_runs[].id'); do
+            arts="$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "${api}/actions/runs/${run_id}/artifacts")"
+            artifact_id="$(printf '%s' "$arts" | jq -r '.artifacts[] | select(.name=="chad-raster-art") | .id' | head -n1)"
+            if [ -n "$artifact_id" ]; then
+              run_json="$(printf '%s' "$runs" | jq -c --argjson id "$run_id" '.workflow_runs[] | select(.id==$id)')"
+              jq -n --argjson run "$run_json" --argjson artifact_id "$artifact_id" '{run_id:$run.id,run_number:$run.run_number,head_branch:$run.head_branch,head_sha:$run.head_sha,created_at:$run.created_at,updated_at:$run.updated_at,conclusion:$run.conclusion,artifact_id:$artifact_id,artifact_name:"chad-raster-art"}' > latest_chad_paid_run.json
+              found=1
+              break
+            fi
+          done
+          test "$found" -eq 1
+          rm .github/workflows/index-latest-chad-artifact.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- latest_chad_paid_run.json .github/workflows/index-latest-chad-artifact.yml
+          git commit -m 'Index latest Chad raster artifact'
+          git push origin HEAD:chad-raster-next-round
