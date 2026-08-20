@@ -19,7 +19,7 @@ on:
           - "12"
         default: "12"
       max_spend_usd:
-        description: "Hard whole-run planning ceiling in USD"
+        description: "Whole-run planning ceiling in USD (estimated, not provider-enforced billing cap)"
         required: true
         type: choice
         options:
@@ -29,7 +29,7 @@ on:
           - "2.00"
         default: "2.00"
       max_per_image_usd:
-        description: "Reject models above this predictable one-image cost"
+        description: "Census eligibility ceiling for predictable one-image cost"
         required: true
         type: choice
         options:
@@ -37,6 +37,7 @@ on:
           - "0.10"
           - "0.15"
           - "0.25"
+          - "0.50"
         default: "0.15"
 
 permissions:
