@@ -31,6 +31,11 @@ EXCLUDED_MODELS = {
     "recraft/recraft-v4-vector",
 }
 
+# Sourceful/Riverflow remains excluded as a provider family until the rights
+# basis for routed OpenRouter usage is clear enough for publication. Also skip
+# vector variants because this pipeline deliberately accepts raster bytes only.
+EXCLUDED_AUTHORS = {"sourceful"}
+
 
 def headers() -> dict[str, str]:
     key = os.environ.get("OPENROUTER_API_KEY")
@@ -118,6 +123,9 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
         mid = model.get("id")
         if not mid or mid in EXCLUDED_MODELS:
             continue
+        author = mid.split("/", 1)[0]
+        if author in EXCLUDED_AUTHORS or "vector" in mid.lower():
+            continue
         entry = catalog.get(mid)
         if not entry:
             continue
@@ -138,7 +146,7 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
                 "model": mid,
                 "name": model.get("name", mid),
                 "rank": rank,
-                "author": mid.split("/", 1)[0],
+                "author": author,
                 "provider_tag": ep["provider_tag"],
                 "provider_name": ep.get("provider_name", ep["provider_tag"]),
                 "params": ep.get("supported_parameters", {}),
@@ -257,7 +265,7 @@ def main() -> int:
     selected = choose(candidates, min(a.max_artists, len(lines)), a.max_spend_usd)
     planned = sum(c["estimated_cost_usd"] for c in selected)
 
-    print(f"excluded_prior_models={len(EXCLUDED_MODELS)}")
+    print(f"excluded_prior_models={len(EXCLUDED_MODELS)} excluded_authors={sorted(EXCLUDED_AUTHORS)}")
     print(f"targets={len(lines)} selected={len(selected)} planned=${planned:.4f} total_cap=${a.max_spend_usd:.2f}")
     for i, c in enumerate(selected):
         line = lines[i]
