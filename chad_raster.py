@@ -25,17 +25,26 @@ PUBLISHED_MODELS = {
     "recraft/recraft-v4-pro",
     "recraft/recraft-v4.1-pro",
     "recraft/recraft-v4.1-utility-pro",
+    "openai/gpt-image-1-mini",
+    "google/gemini-3.1-flash-lite-image",
+    "google/gemini-3.1-flash-image",
+    "openai/gpt-image-2",
+    "bytedance-seed/seedream-5-0-lite",
+    "recraft/recraft-v4.1",
+    "recraft/recraft-v3",
 }
 HARD_BLOCKED_MODELS = {
     "sourceful/riverflow-v2-fast",
     "recraft/recraft-v4-vector",
 }
+# Attempted but not yet publication-grade: semantic miss, text/symbol leakage,
+# or provider failure. These are fallback rerolls only after untouched models.
 REROLL_MODELS = {
+    "google/gemini-2.5-flash-image",
+    "google/gemini-3-pro-image",
+    "openai/gpt-image-1",
     "black-forest-labs/flux.2-klein-4b",
-    "recraft/recraft-v3",
-    "bytedance-seed/seedream-5-0-lite",
     "black-forest-labs/flux.2-max",
-    "recraft/recraft-v4.1",
 }
 EXCLUDED_MODELS = (PUBLISHED_MODELS - REROLL_MODELS) | HARD_BLOCKED_MODELS
 EXCLUDED_AUTHORS = {"sourceful"}
@@ -44,6 +53,7 @@ EXCLUDED_AUTHORS = {"sourceful"}
 # endpoints. Requests use ~1K output where available and medium quality for
 # OpenAI models. Actual provider-reported cost is recorded separately.
 TOKEN_MODEL_ESTIMATES = {
+    # Previously attempted token-billed models retained for rerolls.
     "google/gemini-2.5-flash-image": 0.06,
     "google/gemini-3.1-flash-lite-image": 0.06,
     "openai/gpt-image-1-mini": 0.08,
@@ -51,6 +61,16 @@ TOKEN_MODEL_ESTIMATES = {
     "openai/gpt-image-2": 0.18,
     "google/gemini-3-pro-image": 0.20,
     "openai/gpt-image-1": 0.22,
+
+    # Untouched frontier IDs: conservative one-image planning ceilings, not
+    # claims about exact billing. Actual OpenRouter usage cost is recorded.
+    "microsoft/mai-image-2.5": 0.15,
+    "microsoft/mai-image-2.5-pro": 0.18,
+    "openai/gpt-5-image-mini": 0.08,
+    "openai/gpt-5-image": 0.30,
+    "openai/gpt-5.4-image-2": 0.20,
+    "google/gemini-3.1-flash-image-preview": 0.12,
+    "google/gemini-3-pro-image-preview": 0.20,
 }
 
 

@@ -6,69 +6,69 @@
     "brief": "A powerful autonomous machine reaches a heavy physical barrier whose lock and release mechanism sit outside its workspace in a calm human operator's hands; increased capability cannot move or control the gate."
   },
   {
-    "id": "stop-path",
-    "section": "Keep the stop path outside the failure",
-    "line": "The control loop must remain outside and operationally independent of the system it controls.",
-    "brief": "A chaotic overloaded machine occupies one side while a physically separate hardwired analog monitor and mechanical cutoff sit on an isolated conduit beside the calm operator; no shared console or cable path."
-  },
-  {
-    "id": "telemetry-not-control",
-    "section": "Keep the stop path outside the failure",
-    "line": "More telemetry is not necessarily more control.",
-    "brief": "A wall of noisy glowing monitors overwhelms one workspace while the operator deliberately uses one separate simple needle gauge and physical cutoff; information abundance contrasts with usable control."
-  },
-  {
-    "id": "recursive-authority",
-    "section": "Intelligence has a Jevons problem",
-    "line": "Recursive capability is not recursive authority.",
-    "brief": "A machine visibly adds more tools and articulated stages to itself behind the same fixed external barrier; its growing capability never enlarges the separately controlled permission mechanism."
-  },
-  {
-    "id": "no-defensive-branch",
-    "section": "The Chad test",
-    "line": "There is no special step called: Become defensive.",
-    "brief": "Another person points out a visibly cracked machine part; Chad immediately kneels, inspects it closely, replaces the broken piece, and resumes work without arguing or posturing."
-  },
-  {
     "id": "test-not-assurance",
     "section": "Reality gets the final vote",
     "line": "A test is better than an assurance.",
-    "brief": "A confident presenter gestures beside a pristine component while Chad quietly places an identical component in a real load-testing rig; the physical test, not persuasion, determines what happens."
+    "brief": "A confident presenter gestures beside a pristine component while Chad quietly places an identical component in a real load-testing rig; the physical test, not persuasion, determines what happens. No placards or printed words."
   },
   {
     "id": "change-mind",
     "section": "Reality gets the final vote",
     "line": "If the world proves you wrong, change your mind.",
-    "brief": "Chad calmly abandons his original mechanical design after a real prototype fails and immediately adopts the visibly better working configuration beside it; no shame or drama."
-  },
-  {
-    "id": "source-truth",
-    "section": "Keep track of where things came from",
-    "line": "The source and the truth are still different questions.",
-    "brief": "Two identical-looking mechanisms arrive from a luxurious case and a plain crate; Chad tests both on the same neutral fixture and trusts the one that actually works, regardless of presentation."
-  },
-  {
-    "id": "operator-latency",
-    "section": "Keep the stop path outside the failure",
-    "line": "Operator latency is part of the system.",
-    "brief": "A fast-moving automated mechanism approaches a hazard while the operator's reachable independent mechanical control acts in time; composition emphasizes the shrinking physical distance and response window."
+    "brief": "Chad calmly sets aside a failed mechanical design after its real prototype breaks and immediately works from the visibly better successful configuration beside it; no shame, debate, or drama."
   },
   {
     "id": "mechanical-checks",
     "section": "Intelligence has a Jevons problem",
     "line": "Mechanical checks should become cheap wherever we can make them cheap.",
-    "brief": "Many inexpensive identical physical gauges rapidly check a stream of parts before they can proceed, leaving only unusual exceptions for the calm human operator to inspect."
-  },
-  {
-    "id": "handholds",
-    "section": "Leave room to be wrong",
-    "line": "A good team leaves handholds for other people.",
-    "brief": "Chad builds a sturdy scaffold and deliberately installs clear physical handholds and anchors that let teammates follow safely, rather than making himself the only route upward."
+    "brief": "Many inexpensive identical go-no-go fixtures rapidly check a stream of physical parts before they proceed, while only unusual exceptions reach the calm human operator. No logos or instrument lettering."
   },
   {
     "id": "rest-delegation",
     "section": "Know when to stop",
     "line": "Rest, delegation, and asking for help are not failures of seriousness.",
-    "brief": "Chad hands a tool and responsibility to a capable teammate, steps aside to drink water and recover, while the shared work continues smoothly without heroic overextension."
+    "brief": "Chad deliberately hands a tool and responsibility to a capable teammate, steps aside to drink water and recover, while shared work continues smoothly without heroic overextension."
+  },
+  {
+    "id": "truth-not-winning",
+    "section": "Reality gets the final vote",
+    "line": "The point is not to win arguments. The point is to find out what is actually true.",
+    "brief": "A debate podium and shiny trophy sit ignored in the background while Chad and another person calmly inspect the decisive physical result of a real experiment together."
+  },
+  {
+    "id": "ideas-meet-reality",
+    "section": "A good idea must be allowed to fail",
+    "line": "Chad philosophy does not protect ideas from reality.",
+    "brief": "Chad removes protective padding from his own prototype and places it into a real stress-testing machine, willingly exposing the idea to a test that can genuinely break it."
+  },
+  {
+    "id": "recoverable-progress",
+    "section": "Leave room to be wrong",
+    "line": "Chad philosophy therefore prefers recoverable progress over heroic overextension.",
+    "brief": "Chad advances a difficult build in stable supported stages with a safety line and spare capacity while an overloaded unsupported shortcut visibly collapses nearby; progress remains recoverable."
+  },
+  {
+    "id": "authorized-gate",
+    "section": "Capability is not permission",
+    "line": "No high-consequence actuator without an independently authorized gate in its causal past that can still say no.",
+    "brief": "A powerful industrial actuator is physically downstream of a separate locked mechanical gate controlled from outside its workspace; the gate can block motion even while the actuator remains fully capable."
+  },
+  {
+    "id": "brake-engine-path",
+    "section": "Keep the stop path outside the failure",
+    "line": "Do not put the brake on the same failure path as the engine.",
+    "brief": "An engine-side cable bundle is visibly failing and sparking while a completely separate simple mechanical brake linkage follows an isolated route to the calm operator and remains usable."
+  },
+  {
+    "id": "strongest-criticism",
+    "section": "Do not invent villains",
+    "line": "When testing an idea, use the strongest reasonable criticism you can find.",
+    "brief": "Chad tests his own bridge-like structure against the heaviest realistic load it should survive instead of a tiny harmless load, welcoming the strongest fair challenge rather than a straw target."
+  },
+  {
+    "id": "comfortable-way-wrong",
+    "section": "Build tools that can disagree with you",
+    "line": "If everything around you is designed to agree with you, you have built a very comfortable way to become wrong.",
+    "brief": "Several decorative flattering instruments all point reassuringly the same way while one plain independent calibrated physical gauge contradicts them; Chad trusts and investigates the dissenting measurement. No lettering."
   }
 ]
