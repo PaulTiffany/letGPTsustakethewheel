@@ -1,0 +1,67 @@
+name: Prepare Chad round 15
+
+on:
+  push:
+    branches: [chad-raster-next-round]
+    paths:
+      - '.github/workflows/prepare-chad-round-15.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: ${{ github.actor == github.repository_owner }}
+    environment: inference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout side branch
+        uses: actions/checkout@v4
+        with:
+          ref: chad-raster-next-round
+
+      - name: Patch ledger and target population
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/prepare_chad_round_15.py
+          python3 -m py_compile chad_raster.py
+          python3 -m json.tool chad_lines.json >/dev/null
+
+      - name: Zero-spend census witness
+        id: census
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.WHEEL_OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$OPENROUTER_API_KEY"
+          output="$(python3 chad_raster.py --dry-run --max-artists 12 --max-spend-usd 5.00 --max-per-image-usd 0.50)"
+          printf '%s\n' "$output"
+          printf '%s\n' "$output" | grep -q 'published_models=20 '
+          if printf '%s\n' "$output" | grep -q ' selected=0 '; then
+            echo '::error::Updated census found zero eligible image models'
+            exit 1
+          fi
+          {
+            echo 'text<<EOF'
+            printf '%s\n' "$output"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Commit proven preparation and self-delete
+        env:
+          CENSUS: ${{ steps.census.outputs.text }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/scripts/prepare_chad_round_15.py
+          rm .github/workflows/prepare-chad-round-15.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- chad_raster.py chad_lines.json \
+            .github/scripts/prepare_chad_round_15.py \
+            .github/workflows/prepare-chad-round-15.yml
+          git commit -m 'Prepare Chad round 15' -m "$CENSUS"
+          git push origin HEAD:chad-raster-next-round
