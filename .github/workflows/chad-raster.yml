@@ -67,11 +67,16 @@ jobs:
           set -euo pipefail
           test -n "$OPENROUTER_API_KEY"
           python3 -m py_compile chad_raster.py
-          python3 chad_raster.py \
+          output="$(python3 chad_raster.py \
             --dry-run \
             --max-artists "$MAX_ARTISTS" \
             --max-spend-usd "$MAX_SPEND" \
-            --max-per-image-usd "$MAX_PER_IMAGE"
+            --max-per-image-usd "$MAX_PER_IMAGE")"
+          printf '%s\n' "$output"
+          if printf '%s\n' "$output" | grep -q ' selected=0 '; then
+            echo '::error::Raster Chad census found zero eligible models'
+            exit 1
+          fi
 
   draw:
     if: ${{ !inputs.dry_run && github.actor == github.repository_owner }}
