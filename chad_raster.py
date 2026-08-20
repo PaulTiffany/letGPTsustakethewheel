@@ -53,6 +53,7 @@ TOKEN_MODEL_ESTIMATES = {
     "openai/gpt-image-1": 0.22,
 }
 
+
 def headers() -> dict[str, str]:
     key = os.environ.get("OPENROUTER_API_KEY")
     if not key:
@@ -64,25 +65,25 @@ def headers() -> dict[str, str]:
         "X-OpenRouter-Title": "Chad Philosophy Raster Swarm",
     }
 
+
 def request(url: str, payload: dict[str, Any] | None = None, timeout: int = 240) -> dict[str, Any]:
     data = None if payload is None else json.dumps(payload).encode()
     req = urllib.request.Request(url, data=data, headers=headers(), method="POST" if data else "GET")
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
+
 def enum_values(params: dict[str, Any], key: str) -> list[str]:
     d = params.get(key) or {}
     return [str(v) for v in d.get("values", [])] if d.get("type") == "enum" else []
 
+
 def desired_resolution(model_id: str, params: dict[str, Any]) -> str | None:
     resolutions = enum_values(params, "resolution")
     if "seedream" in model_id.lower():
-        if "2K" in resolutions:
-            return "2K"
-        return None
-    if "1K" in resolutions:
-        return "1K"
-    return None
+        return "2K" if "2K" in resolutions else None
+    return "1K" if "1K" in resolutions else None
+
 
 def estimate_basis(endpoint: dict[str, Any], model_id: str) -> str | None:
     lines = [p for p in endpoint.get("pricing", []) if p.get("billable") == "output_image"]
@@ -91,6 +92,7 @@ def estimate_basis(endpoint: dict[str, Any], model_id: str) -> str | None:
     if any(p.get("unit") == "token" for p in lines) and model_id in TOKEN_MODEL_ESTIMATES:
         return "manual-token-ceiling"
     return None
+
 
 def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
     """Conservative one-image planning estimate; actual usage is recorded later."""
@@ -129,11 +131,21 @@ def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
         relevant.append(amount)
     return sum(relevant) if relevant else None
 
+
 def discover(max_per_image: float) -> list[dict[str, Any]]:
-    ranked = request(f"{BASE}/models?output_modalities=image&sort=design-arena-elo-high-to-low").get("data", [])
+    try:
+        ranked = request(f"{BASE}/models?output_modalities=image&sort=design-arena-elo-high-to-low").get("data", [])
+    except Exception as e:
+        print(f"census-rank-unavailable: {type(e).__name__}: {e}")
+        ranked = []
     rank_map = {m.get("id"): i for i, m in enumerate(ranked, 1) if m.get("id")}
+
+    # The image catalog is the authoritative discovery surface. If this fails,
+    # there is no census to perform, so let the workflow fail visibly.
     catalog = [m for m in request(f"{BASE}/images/models").get("data", []) if m.get("id")]
+
     found = []
+    skipped = 0
     for entry in catalog:
         mid = entry["id"]
         if mid in EXCLUDED_MODELS:
@@ -141,17 +153,37 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
         author = mid.split("/", 1)[0]
         if author in EXCLUDED_AUTHORS or "vector" in mid.lower():
             continue
+
         arch = entry.get("architecture", {})
         if "text" not in arch.get("input_modalities", []) or "image" not in arch.get("output_modalities", []):
             continue
-        eps_url = urllib.parse.urljoin(ORIGIN, entry.get("endpoints", ""))
+
+        endpoints_path = entry.get("endpoints")
+        if not endpoints_path:
+            print(f"census-skip {mid}: missing endpoints path")
+            skipped += 1
+            continue
+
+        eps_url = urllib.parse.urljoin(ORIGIN, endpoints_path)
+        try:
+            endpoint_rows = request(eps_url).get("endpoints", [])
+        except Exception as e:
+            print(f"census-skip {mid}: endpoint lookup {type(e).__name__}: {e}")
+            skipped += 1
+            continue
+
         best = None
-        for ep in request(eps_url).get("endpoints", []):
-            est = cost_estimate(ep, mid)
+        for ep in endpoint_rows:
+            try:
+                est = cost_estimate(ep, mid)
+            except Exception as e:
+                print(f"census-skip {mid}: pricing parse {type(e).__name__}: {e}")
+                continue
             if not ep.get("provider_tag") or est is None or est <= 0 or est > max_per_image:
                 continue
             if best is None or est < best[0]:
                 best = (est, ep)
+
         if best:
             est, ep = best
             found.append({
@@ -167,8 +199,11 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
                 "estimate_basis": estimate_basis(ep, mid),
                 "selection_kind": "reroll" if mid in REROLL_MODELS else "new",
             })
+
     found.sort(key=lambda c: (c["estimated_cost_usd"], c["rank"], c["model"]))
+    print(f"census_candidates={len(found)} census_skipped={skipped}")
     return found
+
 
 def choose_for_lines(
     candidates: list[dict[str, Any]],
@@ -220,6 +255,7 @@ def choose_for_lines(
     fill(rerolls, False)
     return [(targets[i], assigned[i]) for i in range(len(targets)) if i in assigned]
 
+
 def art_prompt(line: dict[str, str]) -> str:
     prompt = (
         "Original raster art for Chad Philosophy. Focal character: handsome square-jawed adult man, strong neck and shoulders, "
@@ -234,6 +270,7 @@ def art_prompt(line: dict[str, str]) -> str:
     if len(prompt) > 995:
         raise ValueError(f"art prompt unexpectedly too long: {len(prompt)}")
     return prompt
+
 
 def payload_for(c: dict[str, Any], prompt: str) -> dict[str, Any]:
     p: dict[str, Any] = {
@@ -261,8 +298,10 @@ def payload_for(c: dict[str, Any], prompt: str) -> dict[str, Any]:
         p["quality"] = "medium"
     return p
 
+
 def slug(s: str) -> str:
     return "-".join("".join(ch if ch.isalnum() else " " for ch in s.lower()).split())[:70]
+
 
 def generate(c: dict[str, Any], prompt: str, timeout: int) -> dict[str, Any]:
     started = time.time()
@@ -291,6 +330,7 @@ def generate(c: dict[str, Any], prompt: str, timeout: int) -> dict[str, Any]:
         "bytes": raw,
         "elapsed_seconds": round(time.time() - started, 3),
     }
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -417,6 +457,7 @@ def main() -> int:
     (a.out_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
