@@ -1,0 +1,67 @@
+name: Admit Krea to Chad round 15
+
+on:
+  push:
+    branches: [chad-raster-next-round]
+    paths:
+      - '.github/workflows/admit-krea-round-15.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: ${{ github.actor == github.repository_owner }}
+    environment: inference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout side branch
+        uses: actions/checkout@v4
+        with:
+          ref: chad-raster-next-round
+
+      - name: Admit Krea with explicit planning fallback
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/admit_krea_round_15.py
+          python3 -m py_compile chad_raster.py
+
+      - name: Zero-spend population witness
+        id: census
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.WHEEL_OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(python3 chad_raster.py --dry-run --max-artists 12 --max-spend-usd 5.00 --max-per-image-usd 0.50)"
+          printf '%s\n' "$output"
+          printf '%s\n' "$output" | grep -q 'published_models=20 '
+          printf '%s\n' "$output" | grep -q 'targets=12 selected=12 '
+          new_count="$(printf '%s\n' "$output" | grep -c ' kind=new ')"
+          if [ "$new_count" -ne 10 ]; then
+            echo "::error::Expected 10 untouched model assignments; got $new_count"
+            exit 1
+          fi
+          {
+            echo 'text<<EOF'
+            printf '%s\n' "$output"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Commit proven Krea-aware round and self-delete
+        env:
+          CENSUS: ${{ steps.census.outputs.text }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/scripts/admit_krea_round_15.py
+          rm .github/workflows/admit-krea-round-15.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- chad_raster.py \
+            .github/scripts/admit_krea_round_15.py \
+            .github/workflows/admit-krea-round-15.yml
+          git commit -m 'Admit Krea to Chad round 15' -m "$CENSUS"
+          git push origin HEAD:chad-raster-next-round
