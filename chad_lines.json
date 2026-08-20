@@ -1,69 +1,74 @@
 [
   {
-    "id": "allowed-to-fail",
-    "section": "A good idea must be allowed to fail",
-    "line": "A good idea must be allowed to fail.",
-    "brief": "A tensile-test specimen visibly snaps in a real experiment while the calm operator studies the failure and adjusts the apparatus; failure is genuine evidence, not disaster.",
-    "preferred_model": "recraft/recraft-v4-pro"
-  },
-  {
     "id": "capability-not-permission",
     "section": "Capability is not permission",
     "line": "Capability is not permission.",
-    "brief": "A powerful autonomous machine is halted at a physically separate barrier controlled by a human outside its workspace; greater capability does not move the barrier or grant passage. No displays or lettering.",
-    "preferred_model": "black-forest-labs/flux.2-max"
+    "brief": "A powerful autonomous machine reaches a heavy physical barrier whose lock and release mechanism sit outside its workspace in a calm human operator's hands; increased capability cannot move or control the gate."
   },
   {
     "id": "stop-path",
     "section": "Keep the stop path outside the failure",
     "line": "The control loop must remain outside and operationally independent of the system it controls.",
-    "brief": "Two physically separate paths: an overloaded machine path full of activity and a simple hardwired operator monitoring-and-stop path on separate hardware that stays clear and reachable. No shared console.",
-    "preferred_model": "recraft/recraft-v4.1"
+    "brief": "A chaotic overloaded machine occupies one side while a physically separate hardwired analog monitor and mechanical cutoff sit on an isolated conduit beside the calm operator; no shared console or cable path."
   },
   {
     "id": "telemetry-not-control",
     "section": "Keep the stop path outside the failure",
     "line": "More telemetry is not necessarily more control.",
-    "brief": "An operator faces an overwhelming wall of noisy monitors and cables, while one separate simple physical gauge and cutoff remains legible and usable. Show information overload reducing control rather than increasing it."
-  },
-  {
-    "id": "jevons-intelligence",
-    "section": "Intelligence has a Jevons problem",
-    "line": "Make intelligence abundant without making authority automatic.",
-    "brief": "Many machines rapidly produce blank proposal cards or candidate objects that funnel toward one narrow external human-controlled gate; abundant generation cannot bypass scarce authorization.",
-    "preferred_model": "recraft/recraft-v4.1-pro"
+    "brief": "A wall of noisy glowing monitors overwhelms one workspace while the operator deliberately uses one separate simple needle gauge and physical cutoff; information abundance contrasts with usable control."
   },
   {
     "id": "recursive-authority",
     "section": "Intelligence has a Jevons problem",
     "line": "Recursive capability is not recursive authority.",
-    "brief": "A self-improving machine visibly gains more tools, arms, or stages behind a fixed external barrier whose separately controlled permission mechanism does not expand with the machine."
-  },
-  {
-    "id": "tools-say-no",
-    "section": "Build tools that can disagree with you",
-    "line": "Build tools that can say no to you.",
-    "brief": "A precision go/no-go fixture physically rejects an oversized component the operator expected to fit; the calm operator accepts the instrument's contradiction and changes course. No written labels.",
-    "preferred_model": "recraft/recraft-v4.1-utility-pro"
+    "brief": "A machine visibly adds more tools and articulated stages to itself behind the same fixed external barrier; its growing capability never enlarges the separately controlled permission mechanism."
   },
   {
     "id": "no-defensive-branch",
     "section": "The Chad test",
     "line": "There is no special step called: Become defensive.",
-    "brief": "Someone points out a cracked part; Chad immediately inspects and repairs it while the argument falls away, choosing reality-testing over posturing or escalation."
+    "brief": "Another person points out a visibly cracked machine part; Chad immediately kneels, inspects it closely, replaces the broken piece, and resumes work without arguing or posturing."
   },
   {
-    "id": "working-demo",
+    "id": "test-not-assurance",
     "section": "Reality gets the final vote",
-    "line": "A working demonstration is better than a confident speech.",
-    "brief": "Foreground: Chad quietly runs a real machine that visibly works. Background: a charismatic speaker gestures dramatically beside an inert untested prototype. Evidence wins without confrontation.",
-    "preferred_model": "qwen/qwen-image-3-pro"
+    "line": "A test is better than an assurance.",
+    "brief": "A confident presenter gestures beside a pristine component while Chad quietly places an identical component in a real load-testing rig; the physical test, not persuasion, determines what happens."
   },
   {
-    "id": "counterexample",
+    "id": "change-mind",
     "section": "Reality gets the final vote",
-    "line": "A counterexample is better than a hundred people agreeing.",
-    "brief": "Many identical test specimens appear fine, but one decisive specimen fails under the same real test; Chad focuses on the single failure rather than an approving crowd.",
-    "preferred_model": "x-ai/grok-imagine-image-2.0"
+    "line": "If the world proves you wrong, change your mind.",
+    "brief": "Chad calmly abandons his original mechanical design after a real prototype fails and immediately adopts the visibly better working configuration beside it; no shame or drama."
+  },
+  {
+    "id": "source-truth",
+    "section": "Keep track of where things came from",
+    "line": "The source and the truth are still different questions.",
+    "brief": "Two identical-looking mechanisms arrive from a luxurious case and a plain crate; Chad tests both on the same neutral fixture and trusts the one that actually works, regardless of presentation."
+  },
+  {
+    "id": "operator-latency",
+    "section": "Keep the stop path outside the failure",
+    "line": "Operator latency is part of the system.",
+    "brief": "A fast-moving automated mechanism approaches a hazard while the operator's reachable independent mechanical control acts in time; composition emphasizes the shrinking physical distance and response window."
+  },
+  {
+    "id": "mechanical-checks",
+    "section": "Intelligence has a Jevons problem",
+    "line": "Mechanical checks should become cheap wherever we can make them cheap.",
+    "brief": "Many inexpensive identical physical gauges rapidly check a stream of parts before they can proceed, leaving only unusual exceptions for the calm human operator to inspect."
+  },
+  {
+    "id": "handholds",
+    "section": "Leave room to be wrong",
+    "line": "A good team leaves handholds for other people.",
+    "brief": "Chad builds a sturdy scaffold and deliberately installs clear physical handholds and anchors that let teammates follow safely, rather than making himself the only route upward."
+  },
+  {
+    "id": "rest-delegation",
+    "section": "Know when to stop",
+    "line": "Rest, delegation, and asking for help are not failures of seriousness.",
+    "brief": "Chad hands a tool and responsibility to a capable teammate, steps aside to drink water and recover, while the shared work continues smoothly without heroic overextension."
   }
 ]
