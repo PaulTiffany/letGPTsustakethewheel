@@ -2,12 +2,11 @@
 """Paid, bounded, cross-model raster art swarm for Chad Philosophy."""
 from __future__ import annotations
 
-import argparse, base64, hashlib, json, os, time, urllib.error, urllib.parse, urllib.request
+import argparse, base64, hashlib, json, os, time, urllib.error, urllib.request
 from pathlib import Path
 from typing import Any
 
 BASE = "https://openrouter.ai/api/v1"
-ORIGIN = "https://openrouter.ai"
 DEFAULT_LINES = Path("chad_lines.json")
 DEFAULT_OUT = Path("results/chad-raster")
 EXT = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
@@ -45,6 +44,7 @@ EXCLUDED_AUTHORS = {"sourceful"}
 # endpoints. Requests use ~1K output where available and medium quality for
 # OpenAI models. Actual provider-reported cost is recorded separately.
 TOKEN_MODEL_ESTIMATES = {
+    "google/gemini-2.5-flash-image": 0.06,
     "google/gemini-3.1-flash-lite-image": 0.06,
     "openai/gpt-image-1-mini": 0.08,
     "google/gemini-3.1-flash-image": 0.12,
@@ -140,8 +140,8 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
         ranked = []
     rank_map = {m.get("id"): i for i, m in enumerate(ranked, 1) if m.get("id")}
 
-    # The image catalog is the authoritative discovery surface. If this fails,
-    # there is no census to perform, so let the workflow fail visibly.
+    # This catalog contains dedicated image-generation models. Per-endpoint
+    # capability/pricing lives at /images/models/{model-id}/endpoints.
     catalog = [m for m in request(f"{BASE}/images/models").get("data", []) if m.get("id")]
 
     found = []
@@ -154,17 +154,7 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
         if author in EXCLUDED_AUTHORS or "vector" in mid.lower():
             continue
 
-        arch = entry.get("architecture", {})
-        if "text" not in arch.get("input_modalities", []) or "image" not in arch.get("output_modalities", []):
-            continue
-
-        endpoints_path = entry.get("endpoints")
-        if not endpoints_path:
-            print(f"census-skip {mid}: missing endpoints path")
-            skipped += 1
-            continue
-
-        eps_url = urllib.parse.urljoin(ORIGIN, endpoints_path)
+        eps_url = f"{BASE}/images/models/{mid}/endpoints"
         try:
             endpoint_rows = request(eps_url).get("endpoints", [])
         except Exception as e:
