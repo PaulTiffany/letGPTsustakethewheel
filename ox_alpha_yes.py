@@ -18,7 +18,8 @@ Composition: portrait 4:5, viewBox 0 0 1024 1280. A handsome square-jawed adult 
 
 This terminal image is the ONE exception to the document's usual no-text rule: the single visible word YES may appear, and no other visible words, letters, numbers, logos, signatures, or watermarks may appear. Make YES integral to the composition rather than a caption.
 
-Return ONLY the complete SVG document beginning with <svg and ending with </svg>. No markdown fence, explanation, external images, external fonts, scripts, links, data URLs, CSS imports, or foreignObject. Use only SVG vector primitives, paths, gradients, masks, clipPaths, and the single text element YES.'''
+Return a JSON object with exactly one key, "svg", whose value is the complete SVG document beginning with <svg and ending with </svg>. No markdown fence, explanation, external images, external fonts, scripts, links, data URLs, CSS imports, or foreignObject. Use only SVG vector primitives, paths, gradients, masks, clipPaths, and the single text element YES.'''
+
 
 def sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
@@ -30,6 +31,7 @@ def call() -> dict:
         "messages": [{"role":"user","content":PROMPT}],
         "temperature": 1.0,
         "max_tokens": 12000,
+        "response_format": {"type":"json_object"},
         "provider": {"allow_fallbacks": False},
     }).encode()
     req = urllib.request.Request(BASE, data=body, method="POST", headers={
@@ -67,29 +69,29 @@ def response_text(raw: dict) -> str:
         pieces.extend(collect_text(msg.get(key)))
     pieces.extend(collect_text(choice.get("text")))
     if not pieces:
-        diag = {
-            "finish_reason": choice.get("finish_reason"),
-            "choice_keys": sorted(choice.keys()),
-            "message_keys": sorted(msg.keys()),
-            "usage": raw.get("usage"),
-        }
+        diag = {"finish_reason": choice.get("finish_reason"), "choice_keys": sorted(choice.keys()), "message_keys": sorted(msg.keys()), "usage": raw.get("usage")}
         raise ValueError("no textual payload found: " + json.dumps(diag, sort_keys=True))
     return "\n".join(pieces)
 
 def extract_svg(text: str) -> str:
-    m = re.search(r"<svg\b[\s\S]*?</svg>", text, re.I)
-    if not m: raise ValueError("no complete SVG in extracted response text")
-    svg = m.group(0)
+    svg = None
+    try:
+        obj = json.loads(text)
+        if isinstance(obj, dict) and isinstance(obj.get("svg"), str):
+            svg = obj["svg"]
+    except json.JSONDecodeError:
+        pass
+    if svg is None:
+        m = re.search(r"<svg\b[\s\S]*?</svg>", text, re.I)
+        if m: svg = m.group(0)
+    if svg is None: raise ValueError("no complete SVG found in JSON response")
     low = svg.lower()
-    forbidden = ["<script", "<foreignobject", "<image", "href=", "xlink:", "url(", "@import", "data:", "http://", "https://"]
-    for x in forbidden:
+    for x in ["<script", "<foreignobject", "<image", "href=", "xlink:", "url(", "@import", "data:", "http://", "https://"]:
         if x in low: raise ValueError(f"forbidden SVG construct: {x}")
-    if not re.search(r'<svg\b[^>]*viewBox=["\']0 0 1024 1280["\']', svg, re.I):
-        raise ValueError("SVG must use viewBox 0 0 1024 1280")
+    if not re.search(r'<svg\b[^>]*viewBox=["\']0 0 1024 1280["\']', svg, re.I): raise ValueError("SVG must use viewBox 0 0 1024 1280")
     visible_text = re.findall(r"<text\b[^>]*>([\s\S]*?)</text>", svg, re.I)
     flattened = [re.sub(r"<[^>]+>", "", t).strip() for t in visible_text]
-    if flattened != ["YES"]:
-        raise ValueError(f"only one text element containing YES is allowed, got {flattened!r}")
+    if flattened != ["YES"]: raise ValueError(f"only one text element containing YES is allowed, got {flattened!r}")
     return svg
 
 def main() -> int:
@@ -97,23 +99,16 @@ def main() -> int:
     rows=[]
     for i in range(1,5):
         raw = call()
-        raw_path=OUT/f"{i:02d}-response.json"
-        raw_path.write_text(json.dumps(raw, indent=2)+"\n")
+        (OUT/f"{i:02d}-response.json").write_text(json.dumps(raw, indent=2)+"\n")
         try:
             text = response_text(raw)
+            (OUT/f"{i:02d}-extracted.txt").write_text(text)
             svg = extract_svg(text)
         except Exception as e:
             (OUT/f"{i:02d}-error.txt").write_text(f"{type(e).__name__}: {e}\n")
             raise
-        svg_b = svg.encode()
-        name=f"{i:02d}-ox-alpha-yes.svg"
-        (OUT/name).write_bytes(svg_b)
-        rows.append({
-            "variant":i, "model":MODEL, "prompt":PROMPT,
-            "prompt_sha256":sha(PROMPT.encode()), "svg_file":name,
-            "svg_sha256":sha(svg_b), "usage":raw.get("usage"),
-            "transform_note":"Ox Alpha authored SVG source; PNG rasterization is a deterministic mechanical render performed by CairoSVG in the workflow."
-        })
+        svg_b = svg.encode(); name=f"{i:02d}-ox-alpha-yes.svg"; (OUT/name).write_bytes(svg_b)
+        rows.append({"variant":i,"model":MODEL,"prompt":PROMPT,"prompt_sha256":sha(PROMPT.encode()),"svg_file":name,"svg_sha256":sha(svg_b),"usage":raw.get("usage"),"transform_note":"Ox Alpha authored SVG source; PNG rasterization is a deterministic mechanical render performed by CairoSVG in the workflow."})
     (OUT/"provenance.jsonl").write_text("".join(json.dumps(r)+"\n" for r in rows))
     return 0
 
