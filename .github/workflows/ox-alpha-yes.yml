@@ -30,6 +30,7 @@ jobs:
           python3 ox_alpha_yes.py
 
       - name: Rasterize mechanically and extend receipts
+        if: success()
         shell: bash
         run: |
           set -euo pipefail
@@ -53,10 +54,11 @@ jobs:
           ) + '\n')
           PY
 
-      - name: Upload Ox Alpha candidates and receipts
+      - name: Upload Ox Alpha candidates and diagnostics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ox-alpha-yes
           path: results/ox-alpha-yes/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
