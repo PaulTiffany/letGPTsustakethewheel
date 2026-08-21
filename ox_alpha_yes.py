@@ -18,7 +18,7 @@ Composition: portrait 4:5, viewBox 0 0 1024 1280. A handsome square-jawed adult 
 
 This terminal image is the ONE exception to the document's usual no-text rule: the single visible word YES may appear, and no other visible words, letters, numbers, logos, signatures, or watermarks may appear. Make YES integral to the composition rather than a caption.
 
-Return ONLY the complete SVG document beginning with <svg and ending with </svg>. No markdown fence, explanation, external images, external fonts, scripts, links, data URLs, CSS imports, or foreignObject. Use only SVG vector primitives, paths, gradients, masks, clipPaths, and the single text element YES.'''
+Return a JSON object with exactly one key, "svg", whose value is the complete SVG document beginning with <svg and ending with </svg>. No markdown fence, explanation, external images, external fonts, scripts, links, data URLs, CSS imports, or foreignObject. Use only SVG vector primitives, paths, gradients, masks, clipPaths, and the single text element YES.'''
 
 
 def sha(b: bytes) -> str:
@@ -31,6 +31,7 @@ def call() -> dict:
         "messages": [{"role":"user","content":PROMPT}],
         "temperature": 1.0,
         "max_tokens": 12000,
+        "response_format": {"type":"json_object"},
         "provider": {"allow_fallbacks": False},
     }).encode()
     req = urllib.request.Request(BASE, data=body, method="POST", headers={
@@ -78,9 +79,19 @@ def response_text(raw: dict) -> str:
     return "\n".join(pieces)
 
 def extract_svg(text: str) -> str:
-    m = re.search(r"<svg\b[\s\S]*?</svg>", text, re.I)
-    if not m: raise ValueError("no complete SVG in extracted response text")
-    svg = m.group(0)
+    svg = None
+    try:
+        obj = json.loads(text)
+        if isinstance(obj, dict) and isinstance(obj.get("svg"), str):
+            svg = obj["svg"]
+    except json.JSONDecodeError:
+        pass
+    if svg is None:
+        m = re.search(r"<svg\b[\s\S]*?</svg>", text, re.I)
+        if m:
+            svg = m.group(0)
+    if svg is None:
+        raise ValueError("no complete SVG found in JSON response")
     low = svg.lower()
     forbidden = ["<script", "<foreignobject", "<image", "href=", "xlink:", "url(", "@import", "data:", "http://", "https://"]
     for x in forbidden:
@@ -102,6 +113,7 @@ def main() -> int:
         raw_path.write_text(json.dumps(raw, indent=2)+"\n")
         try:
             text = response_text(raw)
+            (OUT/f"{i:02d}-extracted.txt").write_text(text)
             svg = extract_svg(text)
         except Exception as e:
             (OUT/f"{i:02d}-error.txt").write_text(f"{type(e).__name__}: {e}\n")
