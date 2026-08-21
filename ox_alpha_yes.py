@@ -20,7 +20,6 @@ This terminal image is the ONE exception to the document's usual no-text rule: t
 
 Return ONLY the complete SVG document beginning with <svg and ending with </svg>. No markdown fence, explanation, external images, external fonts, scripts, links, data URLs, CSS imports, or foreignObject. Use only SVG vector primitives, paths, gradients, masks, clipPaths, and the single text element YES.'''
 
-
 def sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
@@ -41,9 +40,45 @@ def call() -> dict:
     with urllib.request.urlopen(req, timeout=300) as r:
         return json.loads(r.read())
 
+def collect_text(value) -> list[str]:
+    out=[]
+    if isinstance(value, str):
+        if value.strip(): out.append(value)
+    elif isinstance(value, list):
+        for part in value:
+            if isinstance(part, str):
+                if part.strip(): out.append(part)
+            elif isinstance(part, dict):
+                for key in ("text", "content", "reasoning", "reasoning_text"):
+                    out.extend(collect_text(part.get(key)))
+    elif isinstance(value, dict):
+        for key in ("text", "content", "reasoning", "reasoning_text"):
+            out.extend(collect_text(value.get(key)))
+    return out
+
+def response_text(raw: dict) -> str:
+    choices = raw.get("choices") or []
+    if not choices:
+        raise ValueError(f"no choices in response; keys={sorted(raw.keys())}")
+    choice = choices[0] or {}
+    msg = choice.get("message") or {}
+    pieces=[]
+    for key in ("content", "reasoning", "reasoning_content", "reasoning_details"):
+        pieces.extend(collect_text(msg.get(key)))
+    pieces.extend(collect_text(choice.get("text")))
+    if not pieces:
+        diag = {
+            "finish_reason": choice.get("finish_reason"),
+            "choice_keys": sorted(choice.keys()),
+            "message_keys": sorted(msg.keys()),
+            "usage": raw.get("usage"),
+        }
+        raise ValueError("no textual payload found: " + json.dumps(diag, sort_keys=True))
+    return "\n".join(pieces)
+
 def extract_svg(text: str) -> str:
     m = re.search(r"<svg\b[\s\S]*?</svg>", text, re.I)
-    if not m: raise ValueError("no complete SVG in response")
+    if not m: raise ValueError("no complete SVG in extracted response text")
     svg = m.group(0)
     low = svg.lower()
     forbidden = ["<script", "<foreignobject", "<image", "href=", "xlink:", "url(", "@import", "data:", "http://", "https://"]
@@ -58,13 +93,18 @@ def extract_svg(text: str) -> str:
     return svg
 
 def main() -> int:
-    OUT.mkdir(parents=True, exist_ok=False)
+    OUT.mkdir(parents=True, exist_ok=True)
     rows=[]
     for i in range(1,5):
         raw = call()
-        (OUT/f"{i:02d}-response.json").write_text(json.dumps(raw, indent=2)+"\n")
-        content = raw["choices"][0]["message"]["content"]
-        svg = extract_svg(content)
+        raw_path=OUT/f"{i:02d}-response.json"
+        raw_path.write_text(json.dumps(raw, indent=2)+"\n")
+        try:
+            text = response_text(raw)
+            svg = extract_svg(text)
+        except Exception as e:
+            (OUT/f"{i:02d}-error.txt").write_text(f"{type(e).__name__}: {e}\n")
+            raise
         svg_b = svg.encode()
         name=f"{i:02d}-ox-alpha-yes.svg"
         (OUT/name).write_bytes(svg_b)
