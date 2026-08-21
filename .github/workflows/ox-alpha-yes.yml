@@ -1,0 +1,62 @@
+name: Ox Alpha YES
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  draw:
+    if: ${{ github.actor == github.repository_owner }}
+    environment: inference
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ox-alpha-yes
+          persist-credentials: false
+
+      - name: Compile generator
+        run: python3 -m py_compile ox_alpha_yes.py
+
+      - name: Generate four Ox Alpha SVG variants
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.WHEEL_OPENROUTER_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$OPENROUTER_API_KEY"
+          python3 ox_alpha_yes.py
+
+      - name: Rasterize mechanically and extend receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'CairoSVG==2.7.1'
+          python3 - <<'PY'
+          from pathlib import Path
+          import cairosvg, hashlib, json
+          out=Path('results/ox-alpha-yes')
+          rows=[json.loads(x) for x in (out/'provenance.jsonl').read_text().splitlines()]
+          for r in rows:
+              svg=out/r['svg_file']
+              png=out/(svg.stem+'.png')
+              cairosvg.svg2png(bytestring=svg.read_bytes(), write_to=str(png), output_width=1024, output_height=1280)
+              b=png.read_bytes()
+              r['png_file']=png.name
+              r['png_sha256']=hashlib.sha256(b).hexdigest()
+              r['png_bytes']=len(b)
+          (out/'provenance.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in rows))
+          (out/'gallery.md').write_text('# Ox Alpha — terminal YES\n\n' + '\n\n'.join(
+              f"## Variant {r['variant']}\n\n![Variant {r['variant']}]({r['png_file']})\n\n`stealth/ox-alpha` → SVG → deterministic CairoSVG raster" for r in rows
+          ) + '\n')
+          PY
+
+      - name: Upload Ox Alpha candidates and receipts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ox-alpha-yes
+          path: results/ox-alpha-yes/
+          if-no-files-found: error
+          retention-days: 7
