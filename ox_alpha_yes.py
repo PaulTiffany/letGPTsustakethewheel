@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import hashlib, json, os, re, urllib.request
+import hashlib, json, os, re, time, urllib.error, urllib.request
 from pathlib import Path
 
 MODEL = "stealth/ox-alpha"
@@ -24,6 +24,7 @@ Return a JSON object with exactly one key, "svg", whose value is the complete SV
 def sha(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
+
 def call() -> dict:
     key = os.environ["OPENROUTER_API_KEY"]
     body = json.dumps({
@@ -39,8 +40,26 @@ def call() -> dict:
         "HTTP-Referer":"https://github.com/PaulTiffany/letGPTsustakethewheel",
         "X-OpenRouter-Title":"Ox Alpha YES",
     })
-    with urllib.request.urlopen(req, timeout=300) as r:
-        return json.loads(r.read())
+    retryable = {429, 502, 503, 504}
+    last = None
+    for attempt in range(1, 5):
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                return json.loads(r.read())
+        except urllib.error.HTTPError as e:
+            body_text = e.read().decode(errors="replace")[:4000]
+            last = RuntimeError(f"HTTP {e.code}: {body_text}")
+            if e.code not in retryable or attempt == 4:
+                raise last
+        except urllib.error.URLError as e:
+            last = RuntimeError(f"transport error: {e}")
+            if attempt == 4:
+                raise last
+        delay = 2 ** (attempt - 1)
+        print(f"Ox Alpha request attempt {attempt} failed; retrying in {delay}s", flush=True)
+        time.sleep(delay)
+    raise last or RuntimeError("request failed")
+
 
 def collect_text(value) -> list[str]:
     out=[]
@@ -58,6 +77,7 @@ def collect_text(value) -> list[str]:
             out.extend(collect_text(value.get(key)))
     return out
 
+
 def response_text(raw: dict) -> str:
     choices = raw.get("choices") or []
     if not choices:
@@ -72,6 +92,7 @@ def response_text(raw: dict) -> str:
         diag = {"finish_reason": choice.get("finish_reason"), "choice_keys": sorted(choice.keys()), "message_keys": sorted(msg.keys()), "usage": raw.get("usage")}
         raise ValueError("no textual payload found: " + json.dumps(diag, sort_keys=True))
     return "\n".join(pieces)
+
 
 def extract_svg(text: str) -> str:
     svg = None
@@ -94,11 +115,16 @@ def extract_svg(text: str) -> str:
     if flattened != ["YES"]: raise ValueError(f"only one text element containing YES is allowed, got {flattened!r}")
     return svg
 
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     rows=[]
     for i in range(1,5):
-        raw = call()
+        try:
+            raw = call()
+        except Exception as e:
+            (OUT/f"{i:02d}-transport-error.txt").write_text(f"{type(e).__name__}: {e}\n")
+            raise
         (OUT/f"{i:02d}-response.json").write_text(json.dumps(raw, indent=2)+"\n")
         try:
             text = response_text(raw)
@@ -111,5 +137,6 @@ def main() -> int:
         rows.append({"variant":i,"model":MODEL,"prompt":PROMPT,"prompt_sha256":sha(PROMPT.encode()),"svg_file":name,"svg_sha256":sha(svg_b),"usage":raw.get("usage"),"transform_note":"Ox Alpha authored SVG source; PNG rasterization is a deterministic mechanical render performed by CairoSVG in the workflow."})
     (OUT/"provenance.jsonl").write_text("".join(json.dumps(r)+"\n" for r in rows))
     return 0
+
 
 if __name__ == "__main__": raise SystemExit(main())
