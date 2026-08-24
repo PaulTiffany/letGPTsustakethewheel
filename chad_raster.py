@@ -44,16 +44,15 @@ PUBLISHED_MODELS = {
     "openai/gpt-5-image",
     "black-forest-labs/flux.2-klein-4b",
 }
-RIGHTS_REVIEW_HOLD_MODELS = {
-    # AlphaClaw's publication receipt records unclear output ownership for
-    # this specific model. Re-review its terms before making it eligible.
-    "sourceful/riverflow-v2-fast",
-}
-PIPELINE_INCOMPATIBLE_MODELS = {
-    # The current handoff/publisher preserves raster PNG/JPEG/WebP bytes.
-    # This model was curated out because it is a vector-output path.
-    "recraft/recraft-v4-vector",
-}
+
+# Rights holds are policy facts, not availability failures. Keep them at the
+# narrowest level supported by the publication evidence. The unresolved
+# Riverflow issue applies across version churn until the OpenRouter-routed
+# publication basis is explicitly reviewed.
+RIGHTS_REVIEW_HOLD_PREFIXES = (
+    "sourceful/riverflow-",
+)
+
 REROLL_MODELS = {
     "black-forest-labs/flux.2-klein-4b",
     "recraft/recraft-v3",
@@ -61,11 +60,10 @@ REROLL_MODELS = {
     "black-forest-labs/flux.2-max",
     "recraft/recraft-v4.1",
 }
-EXCLUDED_MODELS = (
-    (PUBLISHED_MODELS - REROLL_MODELS)
-    | RIGHTS_REVIEW_HOLD_MODELS
-    | PIPELINE_INCOMPATIBLE_MODELS
-)
+
+# Published models are skipped for diversity unless explicitly reroll-allowed.
+# Model availability is never persisted here; the live catalog is authoritative.
+EXCLUDED_MODELS = PUBLISHED_MODELS - REROLL_MODELS
 
 # Conservative one-image planning ceilings for token-billed dedicated image
 # endpoints. Requests use ~1K output where available and medium quality for
@@ -159,6 +157,27 @@ def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
     return sum(relevant) if relevant else None
 
 
+def model_exclusion_reason(model_id: str) -> str | None:
+    if model_id in EXCLUDED_MODELS:
+        return "published"
+    if any(model_id.startswith(prefix) for prefix in RIGHTS_REVIEW_HOLD_PREFIXES):
+        return "rights-review-hold"
+    # OpenRouter and Recraft expose these as SVG/vector generators. This
+    # publication path accepts raster PNG/JPEG/WebP bytes only.
+    if model_id.startswith("recraft/") and "vector" in model_id.lower():
+        return "pipeline-incompatible-vector"
+    return None
+
+
+def endpoint_supports_raster(model_id: str, params: dict[str, Any]) -> bool:
+    if model_id.startswith("recraft/") and "vector" in model_id.lower():
+        return False
+    formats = {v.lower() for v in enum_values(params, "output_format")}
+    if formats and formats.isdisjoint({"png", "jpg", "jpeg", "webp"}):
+        return False
+    return True
+
+
 def discover(max_per_image: float) -> list[dict[str, Any]]:
     try:
         ranked = request(f"{BASE}/models?output_modalities=image&sort=design-arena-elo-high-to-low").get("data", [])
@@ -173,9 +192,12 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
 
     found = []
     skipped = 0
+    excluded_counts: dict[str, int] = {}
     for entry in catalog:
         mid = entry["id"]
-        if mid in EXCLUDED_MODELS:
+        reason = model_exclusion_reason(mid)
+        if reason:
+            excluded_counts[reason] = excluded_counts.get(reason, 0) + 1
             continue
         author = mid.split("/", 1)[0]
 
@@ -189,6 +211,9 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
 
         best = None
         for ep in endpoint_rows:
+            params = ep.get("supported_parameters") or entry.get("supported_parameters", {})
+            if not endpoint_supports_raster(mid, params):
+                continue
             try:
                 est = cost_estimate(ep, mid)
             except Exception as e:
@@ -216,7 +241,11 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
             })
 
     found.sort(key=lambda c: (c["estimated_cost_usd"], c["rank"], c["model"]))
-    print(f"census_candidates={len(found)} census_skipped={skipped}")
+    print(
+        f"census_candidates={len(found)} census_skipped={skipped} "
+        f"excluded_rights={excluded_counts.get('rights-review-hold', 0)} "
+        f"excluded_pipeline={excluded_counts.get('pipeline-incompatible-vector', 0)}"
+    )
     return found
 
 
@@ -272,19 +301,27 @@ def choose_for_lines(
 
 
 def art_prompt(line: dict[str, str]) -> str:
-    prompt = (
-        "Original raster art for Chad Philosophy. Focal character: handsome square-jawed adult man, strong neck and shoulders, "
-        "relaxed posture, calm amused expression, completely unbothered; confident, never angry or domineering. "
-        "Polished editorial cartoon, bold silhouette, portrait composition. Invent a new face, clothes, pose, and scene. "
-        "Do not copy Chad/Wojak/GigaChad, a celebrity, copyrighted character, logo, or named artist style. No reference image. "
+    # Keep the shared prompt compact enough for legacy 1K-class providers while
+    # checking actual known model limits separately during census preflight.
+    return (
+        "Original raster art for Chad Philosophy. Focal character: original square-jawed adult man, strong build, "
+        "relaxed posture, calm amused expression; confident, never domineering. Editorial cartoon, bold silhouette, "
+        "portrait composition. Invent a new face, clothes, pose, and scene. Do not copy Chad/Wojak/GigaChad, "
+        "celebrities, copyrighted characters, logos, or named artist styles. No reference image. "
         "NO VISIBLE TEXT: no words, letters, numbers, captions, labels, signs, logos, or watermarks. "
-        "Use one concrete physical metaphor, not an infographic. "
         f"Line: {line['line']} Scene: {line['brief']} "
-        "Show the idea through action and composition."
+        "Show the idea through physical action, not an infographic."
     )
-    if len(prompt) > 995:
-        raise ValueError(f"art prompt unexpectedly too long: {len(prompt)}")
-    return prompt
+
+
+def prompt_limit(model_id: str) -> int | None:
+    """Known provider prompt limits; None means the census has no local cap fact."""
+    mid = model_id.lower()
+    if mid.startswith("recraft/recraft-v2") or mid.startswith("recraft/recraft-v3"):
+        return 1000
+    if mid.startswith("recraft/recraft-v4"):
+        return 10000
+    return None
 
 
 def payload_for(c: dict[str, Any], prompt: str) -> dict[str, Any]:
@@ -368,19 +405,34 @@ def main() -> int:
     assignments = choose_for_lines(candidates, lines, min(a.max_artists, len(lines)), a.max_spend_usd)
     planned = sum(c["estimated_cost_usd"] for _, c in assignments)
 
+    # Build and validate the exact prompts before either approving a dry run or
+    # sending a draw request. Census and draw therefore share the same payload.
+    preflight: list[tuple[dict[str, str], dict[str, Any], str, int | None]] = []
+    for line, c in assignments:
+        prompt = art_prompt(line)
+        limit = prompt_limit(c["model"])
+        if limit is not None and len(prompt) > limit:
+            raise ValueError(
+                f"prompt preflight failed for {c['model']} -> {line['id']}: "
+                f"{len(prompt)} > {limit} characters"
+            )
+        preflight.append((line, c, prompt, limit))
+
     print(
         f"published_models={len(PUBLISHED_MODELS)} reroll_models={len(REROLL_MODELS)} "
-        f"rights_review_holds={len(RIGHTS_REVIEW_HOLD_MODELS)} "
-        f"pipeline_incompatible={len(PIPELINE_INCOMPATIBLE_MODELS)}"
+        f"rights_review_hold_families={len(RIGHTS_REVIEW_HOLD_PREFIXES)} "
+        "pipeline=raster-only"
     )
     print(f"targets={len(lines)} selected={len(assignments)} planned=${planned:.4f} total_cap=${a.max_spend_usd:.2f}")
-    for i, (line, c) in enumerate(assignments, 1):
+    for i, (line, c, prompt, limit) in enumerate(preflight, 1):
         resolution = desired_resolution(c["model"], c["params"]) or "provider-default"
         preferred = line.get("preferred_model") == c["model"]
         tag = "pinned-reroll" if preferred else c["selection_kind"]
+        limit_text = str(limit) if limit is not None else "provider-unspecified"
         print(
             f"{i}. rank={c['rank']} kind={tag} {c['model']} via {c['provider_tag']} "
-            f"res={resolution} est=${c['estimated_cost_usd']:.4f} basis={c['estimate_basis']} -> {line['line']}"
+            f"res={resolution} est=${c['estimated_cost_usd']:.4f} basis={c['estimate_basis']} "
+            f"prompt_chars={len(prompt)} prompt_limit={limit_text} -> {line['line']}"
         )
     if a.dry_run:
         return 0
@@ -394,9 +446,8 @@ def main() -> int:
         raise FileExistsError(prov)
 
     rows, actual_total = [], 0.0
-    for i, (line, c) in enumerate(assignments, 1):
-        prompt = art_prompt(line)
-        print(f"[{i}/{len(assignments)}] {c['model']} -> {line['id']}", flush=True)
+    for i, (line, c, prompt, limit) in enumerate(preflight, 1):
+        print(f"[{i}/{len(preflight)}] {c['model']} -> {line['id']}", flush=True)
         result = generate(c, prompt, a.timeout)
         usage = result.get("usage") or {}
         try:
@@ -419,6 +470,7 @@ def main() -> int:
             "actual_cumulative_cost_usd": actual_total,
             "prompt": prompt,
             "prompt_chars": len(prompt),
+            "prompt_limit_chars": limit,
             "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
             "usage": usage,
             "reference_image_supplied": False,
