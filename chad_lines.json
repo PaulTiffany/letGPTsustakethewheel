@@ -1,74 +1,20 @@
 [
   {
-    "id": "capability-not-permission",
-    "section": "Capability is not permission",
-    "line": "Capability is not permission.",
-    "brief": "A powerful autonomous machine reaches a heavy physical barrier whose lock and release mechanism sit outside its workspace in a calm human operator's hands; increased capability cannot move or control the gate."
+    "id": "basic-idea",
+    "section": "The basic idea",
+    "line": "See what is true. Accept what is true. Fix what is false. Do not waste your life defending your pride.",
+    "brief": "Chad calmly inspects a visibly damaged mechanical assembly on a workbench, accepts the failed part without drama, removes it, and installs the correct replacement while an unused trophy and mirror sit ignored in the background."
   },
   {
-    "id": "stop-path",
-    "section": "Keep the stop path outside the failure",
-    "line": "The control loop must remain outside and operationally independent of the system it controls.",
-    "brief": "A chaotic overloaded machine occupies one side while a physically separate hardwired analog monitor and mechanical cutoff sit on an isolated conduit beside the calm operator; no shared console or cable path."
-  },
-  {
-    "id": "telemetry-not-control",
-    "section": "Keep the stop path outside the failure",
-    "line": "More telemetry is not necessarily more control.",
-    "brief": "A wall of noisy glowing monitors overwhelms one workspace while the operator deliberately uses one separate simple needle gauge and physical cutoff; information abundance contrasts with usable control."
-  },
-  {
-    "id": "recursive-authority",
+    "id": "judgment-scarcity",
     "section": "Intelligence has a Jevons problem",
-    "line": "Recursive capability is not recursive authority.",
-    "brief": "A machine visibly adds more tools and articulated stages to itself behind the same fixed external barrier; its growing capability never enlarges the separately controlled permission mechanism."
+    "line": "So making intelligence abundant can create a second scarcity: attention and judgment about what all that intelligence produces.",
+    "brief": "A large automated workshop rapidly produces many finished mechanisms onto a broad conveyor, but only a narrow inspection station with one calm human operator can carefully judge which few should proceed; abundance upstream meets scarce attention at the decision point."
   },
   {
-    "id": "no-defensive-branch",
-    "section": "The Chad test",
-    "line": "There is no special step called: Become defensive.",
-    "brief": "Another person points out a visibly cracked machine part; Chad immediately kneels, inspects it closely, replaces the broken piece, and resumes work without arguing or posturing."
-  },
-  {
-    "id": "test-not-assurance",
-    "section": "Reality gets the final vote",
-    "line": "A test is better than an assurance.",
-    "brief": "A confident presenter gestures beside a pristine component while Chad quietly places an identical component in a real load-testing rig; the physical test, not persuasion, determines what happens."
-  },
-  {
-    "id": "change-mind",
-    "section": "Reality gets the final vote",
-    "line": "If the world proves you wrong, change your mind.",
-    "brief": "Chad calmly abandons his original mechanical design after a real prototype fails and immediately adopts the visibly better working configuration beside it; no shame or drama."
-  },
-  {
-    "id": "source-truth",
-    "section": "Keep track of where things came from",
-    "line": "The source and the truth are still different questions.",
-    "brief": "Two identical-looking mechanisms arrive from a luxurious case and a plain crate; Chad tests both on the same neutral fixture and trusts the one that actually works, regardless of presentation."
-  },
-  {
-    "id": "operator-latency",
-    "section": "Keep the stop path outside the failure",
-    "line": "Operator latency is part of the system.",
-    "brief": "A fast-moving automated mechanism approaches a hazard while the operator's reachable independent mechanical control acts in time; composition emphasizes the shrinking physical distance and response window."
-  },
-  {
-    "id": "mechanical-checks",
-    "section": "Intelligence has a Jevons problem",
-    "line": "Mechanical checks should become cheap wherever we can make them cheap.",
-    "brief": "Many inexpensive identical physical gauges rapidly check a stream of parts before they can proceed, leaving only unusual exceptions for the calm human operator to inspect."
-  },
-  {
-    "id": "handholds",
-    "section": "Leave room to be wrong",
-    "line": "A good team leaves handholds for other people.",
-    "brief": "Chad builds a sturdy scaffold and deliberately installs clear physical handholds and anchors that let teammates follow safely, rather than making himself the only route upward."
-  },
-  {
-    "id": "rest-delegation",
-    "section": "Know when to stop",
-    "line": "Rest, delegation, and asking for help are not failures of seriousness.",
-    "brief": "Chad hands a tool and responsibility to a capable teammate, steps aside to drink water and recover, while the shared work continues smoothly without heroic overextension."
+    "id": "room-to-think",
+    "section": "Why call this Chad philosophy?",
+    "line": "That little separation creates room to think.",
+    "brief": "Chad stands at a spacious workbench where two physically separated trays keep measured facts apart from social trophies and mirrors, leaving a clear open working area in the middle where he can calmly inspect and decide what to do next."
   }
 ]
