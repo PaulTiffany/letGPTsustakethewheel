@@ -44,8 +44,14 @@ PUBLISHED_MODELS = {
     "openai/gpt-5-image",
     "black-forest-labs/flux.2-klein-4b",
 }
-HARD_BLOCKED_MODELS = {
+RIGHTS_REVIEW_HOLD_MODELS = {
+    # AlphaClaw's publication receipt records unclear output ownership for
+    # this specific model. Re-review its terms before making it eligible.
     "sourceful/riverflow-v2-fast",
+}
+PIPELINE_INCOMPATIBLE_MODELS = {
+    # The current handoff/publisher preserves raster PNG/JPEG/WebP bytes.
+    # This model was curated out because it is a vector-output path.
     "recraft/recraft-v4-vector",
 }
 REROLL_MODELS = {
@@ -55,8 +61,11 @@ REROLL_MODELS = {
     "black-forest-labs/flux.2-max",
     "recraft/recraft-v4.1",
 }
-EXCLUDED_MODELS = (PUBLISHED_MODELS - REROLL_MODELS) | HARD_BLOCKED_MODELS
-EXCLUDED_AUTHORS = {"sourceful"}
+EXCLUDED_MODELS = (
+    (PUBLISHED_MODELS - REROLL_MODELS)
+    | RIGHTS_REVIEW_HOLD_MODELS
+    | PIPELINE_INCOMPATIBLE_MODELS
+)
 
 # Conservative one-image planning ceilings for token-billed dedicated image
 # endpoints. Requests use ~1K output where available and medium quality for
@@ -158,8 +167,8 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
         ranked = []
     rank_map = {m.get("id"): i for i, m in enumerate(ranked, 1) if m.get("id")}
 
-    # This catalog contains dedicated image-generation models. Per-endpoint
-    # capability/pricing lives at /images/models/{model-id}/endpoints.
+    # This live catalog contains currently available dedicated image-generation
+    # models. Availability is intentionally not persisted as a local blacklist.
     catalog = [m for m in request(f"{BASE}/images/models").get("data", []) if m.get("id")]
 
     found = []
@@ -169,8 +178,6 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
         if mid in EXCLUDED_MODELS:
             continue
         author = mid.split("/", 1)[0]
-        if author in EXCLUDED_AUTHORS or "vector" in mid.lower():
-            continue
 
         eps_url = f"{BASE}/images/models/{mid}/endpoints"
         try:
@@ -363,7 +370,8 @@ def main() -> int:
 
     print(
         f"published_models={len(PUBLISHED_MODELS)} reroll_models={len(REROLL_MODELS)} "
-        f"hard_blocked_models={len(HARD_BLOCKED_MODELS)} excluded_authors={sorted(EXCLUDED_AUTHORS)}"
+        f"rights_review_holds={len(RIGHTS_REVIEW_HOLD_MODELS)} "
+        f"pipeline_incompatible={len(PIPELINE_INCOMPATIBLE_MODELS)}"
     )
     print(f"targets={len(lines)} selected={len(assignments)} planned=${planned:.4f} total_cap=${a.max_spend_usd:.2f}")
     for i, (line, c) in enumerate(assignments, 1):
