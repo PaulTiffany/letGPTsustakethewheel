@@ -1,20 +1,20 @@
 [
   {
-    "id": "basic-idea",
-    "section": "The basic idea",
-    "line": "See what is true. Accept what is true. Fix what is false. Do not waste your life defending your pride.",
-    "brief": "Chad calmly inspects a visibly damaged mechanical assembly on a workbench, accepts the failed part without drama, removes it, and installs the correct replacement while an unused trophy and mirror sit ignored in the background."
+    "id": "plan-survives-failure",
+    "section": "Leave room to be wrong",
+    "line": "A good plan can survive one person getting tired, one tool failing, one assumption being wrong, or one experiment going badly.",
+    "brief": "Chad calmly works beside a modular scaffolded project with several independent supports while one tired teammate sits down, one tool lies broken, and one failed component has been removed; the overall work remains stable and continues without drama."
   },
   {
-    "id": "judgment-scarcity",
-    "section": "Intelligence has a Jevons problem",
-    "line": "So making intelligence abundant can create a second scarcity: attention and judgment about what all that intelligence produces.",
-    "brief": "A large automated workshop rapidly produces many finished mechanisms onto a broad conveyor, but only a narrow inspection station with one calm human operator can carefully judge which few should proceed; abundance upstream meets scarce attention at the decision point."
+    "id": "better-method-not-authority",
+    "section": "Capability is not permission",
+    "line": "A system may discover a better method. That does not mean it has earned the right to deploy that method, widen its own permissions, or remove the gate that judged it.",
+    "brief": "A powerful machine presents an improved mechanical part toward a sturdy external gate, while Chad outside the machine retains the separate key and inspection lever; the better part is visibly useful but cannot install itself or open the gate."
   },
   {
-    "id": "room-to-think",
+    "id": "embarrassing-truth-standing",
     "section": "Why call this Chad philosophy?",
-    "line": "That little separation creates room to think.",
-    "brief": "Chad stands at a spacious workbench where two physically separated trays keep measured facts apart from social trophies and mirrors, leaving a clear open working area in the middle where he can calmly inspect and decide what to do next."
+    "line": "A person hears a potentially embarrassing truth and remains standing.",
+    "brief": "Chad stands relaxed and steady while another person points out a plainly visible flaw in a project on the workbench; instead of shrinking, posturing, or arguing, he calmly looks at the flaw and stays composed."
   }
 ]
