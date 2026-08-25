@@ -43,6 +43,8 @@ PUBLISHED_MODELS = {
     "openai/gpt-5.4-image-2",
     "openai/gpt-5-image",
     "black-forest-labs/flux.2-klein-4b",
+    "google/gemini-2.5-flash-image",
+    "openai/gpt-image-1",
 }
 
 # Rights holds are policy facts, not availability failures. Keep them at the
@@ -59,6 +61,13 @@ REROLL_MODELS = {
     "bytedance-seed/seedream-5-0-lite",
     "black-forest-labs/flux.2-max",
     "recraft/recraft-v4.1",
+}
+
+# Recent-attempt holds are temporary diversity constraints, not quality,
+# rights, compatibility, or availability judgments. Rotate/clear them when a
+# later round deliberately wants to revisit the model.
+RECENTLY_ATTEMPTED_MODELS = {
+    "google/gemini-3-pro-image",
 }
 
 # Published models are skipped for diversity unless explicitly reroll-allowed.
@@ -160,6 +169,8 @@ def cost_estimate(endpoint: dict[str, Any], model_id: str) -> float | None:
 def model_exclusion_reason(model_id: str) -> str | None:
     if model_id in EXCLUDED_MODELS:
         return "published"
+    if model_id in RECENTLY_ATTEMPTED_MODELS:
+        return "recently-attempted"
     if any(model_id.startswith(prefix) for prefix in RIGHTS_REVIEW_HOLD_PREFIXES):
         return "rights-review-hold"
     # OpenRouter and Recraft expose these as SVG/vector generators. This
@@ -243,6 +254,7 @@ def discover(max_per_image: float) -> list[dict[str, Any]]:
     found.sort(key=lambda c: (c["estimated_cost_usd"], c["rank"], c["model"]))
     print(
         f"census_candidates={len(found)} census_skipped={skipped} "
+        f"excluded_recent={excluded_counts.get('recently-attempted', 0)} "
         f"excluded_rights={excluded_counts.get('rights-review-hold', 0)} "
         f"excluded_pipeline={excluded_counts.get('pipeline-incompatible-vector', 0)}"
     )
@@ -420,6 +432,7 @@ def main() -> int:
 
     print(
         f"published_models={len(PUBLISHED_MODELS)} reroll_models={len(REROLL_MODELS)} "
+        f"recent_attempt_holds={len(RECENTLY_ATTEMPTED_MODELS)} "
         f"rights_review_hold_families={len(RIGHTS_REVIEW_HOLD_PREFIXES)} "
         "pipeline=raster-only"
     )
