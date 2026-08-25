@@ -12,6 +12,18 @@
     "brief": "A powerful machine presents an improved mechanical part toward a sturdy external gate, while Chad outside the machine retains the separate key and inspection lever; the better part is visibly useful but cannot install itself or open the gate."
   },
   {
+    "id": "ridiculous-experiment",
+    "section": "Play is allowed",
+    "line": "A ridiculous experiment may teach something.",
+    "brief": "Chad cheerfully tests a deliberately absurd homemade contraption assembled from mismatched mechanical parts, toys, springs, funnels, and a precision measuring fixture; the setup looks playful and improbable but produces one clearly useful physical observation without any written labels."
+  },
+  {
+    "id": "indispensable-single-point",
+    "section": "The Chad test",
+    "line": "Make yourself indispensable and hope nothing goes wrong.",
+    "brief": "Chad refuses to remain the sole human support for a precarious project: he replaces one overloaded central support with several independent braces, hands tools to teammates, and steps back while the structure remains stable without depending on him alone."
+  },
+  {
     "id": "embarrassing-truth-standing",
     "section": "Why call this Chad philosophy?",
     "line": "A person hears a potentially embarrassing truth and remains standing.",
