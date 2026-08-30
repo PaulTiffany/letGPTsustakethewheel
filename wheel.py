@@ -22,7 +22,7 @@ from typing import Any
 
 OPENROUTER_BASE = "https://openrouter.ai/api/v1"
 APP_TITLE = "letGPTsustakethewheel"
-DEFAULT_IMAGE = Path("assets/letGPTsustakethewheel.jpg")
+DEFAULT_IMAGE = Path("assets/letGPTsustakethewheel-redacted.jpg")
 DEFAULT_OUT = Path("results/poll.jsonl")
 MIN_FIXTURE_BYTES = 50_000
 MAX_WORKFLOW_MODELS = 20
