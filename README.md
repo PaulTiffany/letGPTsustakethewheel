@@ -19,7 +19,7 @@ Allowed actions:
 - `Save`
 - `Copy link to post`
 - `Embed this post`
-- `Unfollow rUv.`
+- `Unfollow`
 - `Not interested`
 - `Seems like AI slop`
 - `Report post`
