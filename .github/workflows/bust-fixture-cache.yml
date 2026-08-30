@@ -1,0 +1,33 @@
+name: Rename redacted wheel fixture
+
+on:
+  push:
+    paths:
+      - ".github/workflows/bust-fixture-cache.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rename fixture and update references
+        shell: bash
+        run: |
+          set -euo pipefail
+          git mv assets/letGPTsustakethewheel.jpg assets/letGPTsustakethewheel-redacted.jpg
+          sed -i 's#assets/letGPTsustakethewheel.jpg#assets/letGPTsustakethewheel-redacted.jpg#g' README.md wheel.py
+
+      - name: Commit rename
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md wheel.py assets/letGPTsustakethewheel-redacted.jpg
+          git commit -m "Rename redacted fixture to bust stale image cache"
+          git push
