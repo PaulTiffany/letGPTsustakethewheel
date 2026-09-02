@@ -1,0 +1,64 @@
+name: SpaceDonkey Samples
+
+on:
+  push:
+    branches:
+      - space-donkey-samples
+    paths:
+      - "space_donkey_raster.py"
+      - "space_donkey_lines.json"
+      - ".github/workflows/space-donkey-samples.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sample:
+    if: ${{ github.actor == github.repository_owner }}
+    environment: inference
+    concurrency:
+      group: wheel-inference
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Dry census
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.WHEEL_OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$OPENROUTER_API_KEY"
+          python3 -m py_compile chad_raster.py space_donkey_raster.py
+          python3 space_donkey_raster.py \
+            --dry-run \
+            --lines space_donkey_lines.json \
+            --max-artists 6 \
+            --max-spend-usd 1.00 \
+            --max-per-image-usd 0.25
+
+      - name: Generate independent samples
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.WHEEL_OPENROUTER_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 space_donkey_raster.py \
+            --lines space_donkey_lines.json \
+            --out-dir results/space-donkey \
+            --max-artists 6 \
+            --max-spend-usd 1.00 \
+            --max-per-image-usd 0.25
+
+      - name: Upload samples and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: space-donkey-samples
+          path: results/space-donkey/
+          if-no-files-found: error
+          retention-days: 7
