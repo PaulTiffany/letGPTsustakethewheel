@@ -1,0 +1,44 @@
+[
+  {
+    "id": "premium-flux2-pro",
+    "line": "SpaceDonkey premium — FLUX.2 Pro",
+    "brief": "One local handoff as a playable game scene",
+    "preferred_model": "black-forest-labs/flux.2-pro",
+    "prompt": "Playable side-view sci-fi game screenshot, one local SpaceDonkey handoff. Earth curvature far below; a rigid backbone crosses high above. One unequal powered tether swing hangs from it. A small spacecraft is visibly mechanically locked to the moving carriage and riding its arc. Ahead is a second moving carriage with a broad translucent capture corridor. Show two faint projected release paths from the current craft: one early path misses below; one later tangent enters the next capture corridor. The scene must make the mechanic obvious by looking: wait, release, merge, lock, ride. No whole-planet explainer, no infographic panels, no literal jumping, no giant skyhook, no visible text, labels, logos, or watermark."
+  },
+  {
+    "id": "premium-openai",
+    "line": "SpaceDonkey premium — OpenAI",
+    "brief": "One local handoff as a playable game scene",
+    "preferred_model": "openai/gpt-5.4-image-2",
+    "prompt": "Playable side-view sci-fi game screenshot, one local SpaceDonkey handoff. Earth curvature far below; a rigid backbone crosses high above. One unequal powered tether swing hangs from it. A small spacecraft is visibly mechanically locked to the moving carriage and riding its arc. Ahead is a second moving carriage with a broad translucent capture corridor. Show two faint projected release paths from the current craft: one early path misses below; one later tangent enters the next capture corridor. The scene must make the mechanic obvious by looking: wait, release, merge, lock, ride. No whole-planet explainer, no infographic panels, no literal jumping, no giant skyhook, no visible text, labels, logos, or watermark."
+  },
+  {
+    "id": "premium-google",
+    "line": "SpaceDonkey premium — Google",
+    "brief": "One local handoff as a playable game scene",
+    "preferred_model": "google/gemini-3-pro-image-preview",
+    "prompt": "Playable side-view sci-fi game screenshot, one local SpaceDonkey handoff. Earth curvature far below; a rigid backbone crosses high above. One unequal powered tether swing hangs from it. A small spacecraft is visibly mechanically locked to the moving carriage and riding its arc. Ahead is a second moving carriage with a broad translucent capture corridor. Show two faint projected release paths from the current craft: one early path misses below; one later tangent enters the next capture corridor. The scene must make the mechanic obvious by looking: wait, release, merge, lock, ride. No whole-planet explainer, no infographic panels, no literal jumping, no giant skyhook, no visible text, labels, logos, or watermark."
+  },
+  {
+    "id": "premium-microsoft",
+    "line": "SpaceDonkey premium — Microsoft",
+    "brief": "One local handoff as a playable game scene",
+    "preferred_model": "microsoft/mai-image-2.5-pro",
+    "prompt": "Playable side-view sci-fi game screenshot, one local SpaceDonkey handoff. Earth curvature far below; a rigid backbone crosses high above. One unequal powered tether swing hangs from it. A small spacecraft is visibly mechanically locked to the moving carriage and riding its arc. Ahead is a second moving carriage with a broad translucent capture corridor. Show two faint projected release paths from the current craft: one early path misses below; one later tangent enters the next capture corridor. The scene must make the mechanic obvious by looking: wait, release, merge, lock, ride. No whole-planet explainer, no infographic panels, no literal jumping, no giant skyhook, no visible text, labels, logos, or watermark."
+  },
+  {
+    "id": "premium-krea",
+    "line": "SpaceDonkey premium — Krea",
+    "brief": "One local handoff as a playable game scene",
+    "preferred_model": "krea/krea-2-large",
+    "prompt": "Playable side-view sci-fi game screenshot, one local SpaceDonkey handoff. Earth curvature far below; a rigid backbone crosses high above. One unequal powered tether swing hangs from it. A small spacecraft is visibly mechanically locked to the moving carriage and riding its arc. Ahead is a second moving carriage with a broad translucent capture corridor. Show two faint projected release paths from the current craft: one early path misses below; one later tangent enters the next capture corridor. The scene must make the mechanic obvious by looking: wait, release, merge, lock, ride. No whole-planet explainer, no infographic panels, no literal jumping, no giant skyhook, no visible text, labels, logos, or watermark."
+  },
+  {
+    "id": "premium-qwen",
+    "line": "SpaceDonkey premium — Qwen",
+    "brief": "One local handoff as a playable game scene",
+    "preferred_model": "qwen/qwen-image-3-pro",
+    "prompt": "Playable side-view sci-fi game screenshot, one local SpaceDonkey handoff. Earth curvature far below; a rigid backbone crosses high above. One unequal powered tether swing hangs from it. A small spacecraft is visibly mechanically locked to the moving carriage and riding its arc. Ahead is a second moving carriage with a broad translucent capture corridor. Show two faint projected release paths from the current craft: one early path misses below; one later tangent enters the next capture corridor. The scene must make the mechanic obvious by looking: wait, release, merge, lock, ride. No whole-planet explainer, no infographic panels, no literal jumping, no giant skyhook, no visible text, labels, logos, or watermark."
+  }
+]
